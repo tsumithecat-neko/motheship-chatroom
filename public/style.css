@@ -186,3 +186,78 @@ button.mini.danger { color: var(--red); }
 .grid2 input { padding: 6px; }
 .form-actions { display: flex; gap: 10px; }
 button.danger { color: var(--red); border-color: #5a2a2a; }
+
+/* tactical map */
+.map-panel { width: 1180px; max-width: 96vw; height: 88vh; display: flex; flex-direction: column; }
+.map-head-actions { display: flex; align-items: center; gap: 6px; }
+.map-body { display: flex; gap: 12px; padding: 12px 14px 14px; flex: 1; min-height: 0; }
+.map-side {
+  width: 210px; flex: 0 0 210px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
+  padding-right: 8px; border-right: 1px solid var(--line);
+}
+.map-sec-t { color: var(--dim); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.map-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.map-btns input[type=number] {
+  width: 62px; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 5px; padding: 5px 6px; font-family: inherit; font-size: 12px; outline: none;
+}
+.map-opt { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.map-opt label { color: var(--dim); font-size: 11px; }
+.map-opt select {
+  flex: 1; min-width: 78px; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 5px; padding: 4px 6px; font-family: inherit; font-size: 12px; outline: none;
+}
+.map-hint { color: var(--dim); font-size: 10px; line-height: 1.5; opacity: 0.8; }
+button.mini.tool.active { border-color: var(--green); color: var(--green); background: rgba(92,240,138,0.10); }
+.map-main { flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 8px; }
+.map-tipbar {
+  min-height: 22px; font-size: 12px; color: var(--text); opacity: 0.9;
+  padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel2);
+}
+.map-canvas-wrap {
+  flex: 1; position: relative; overflow: hidden; border: 1px solid var(--line);
+  border-radius: 8px; background: #07110b; cursor: crosshair; min-height: 0;
+}
+#mapCanvas { display: block; touch-action: none; }
+#mapEntryBtn, #mapExploreBtn, #mapDel { white-space: nowrap; }
+button.mini:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---- 地图 v3：模式 / 楼层 / 公开 / 新建对话框 ---- */
+.map-mode { display: flex; gap: 2px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; padding: 2px; background: var(--panel2); }
+.map-mode button.mini { border: none; border-radius: 4px; color: var(--dim); background: transparent; padding: 3px 10px; }
+.map-mode button.mini.on { color: #07110b; background: var(--green); font-weight: bold; }
+.map-pub { display: flex; gap: 6px; }
+button.mini.amber { color: var(--amber); border-color: #6b5228; }
+button.mini.amber:hover { border-color: var(--amber); color: #fff; background: rgba(255,180,84,0.12); }
+.map-floors { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 28px; padding: 2px 0; }
+.map-floor-tab {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 10px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 12px; user-select: none;
+}
+.map-floor-tab .fx { color: var(--red); font-size: 11px; opacity: 0.8; cursor: pointer; }
+.map-floor-tab .fx:hover { opacity: 1; }
+.map-floor-tab.active { border-color: var(--green); color: var(--green); }
+.map-floor-add { padding: 4px 8px; font-size: 12px; color: var(--amber); cursor: pointer; border: 1px dashed var(--line); border-radius: 6px; user-select: none; }
+.map-floor-add:hover { border-color: var(--amber); color: var(--amber); }
+
+/* 新建房间对话框 */
+.dlg-panel { width: 400px; max-width: 92vw; padding: 18px 20px; border-radius: 10px; }
+.dlg-head { font-size: 15px; font-weight: bold; margin-bottom: 10px; }
+.dlg-body { display: flex; flex-direction: column; gap: 10px; }
+.map-help-panel { width: 520px; max-width: 92vw; }
+.map-help-body p { margin: 0 0 8px 0; line-height: 1.55; font-size: 13px; }
+.map-help-body p:last-child { margin-bottom: 0; }
+.map-help-body code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.dlg-row { color: var(--dim); font-size: 12px; }
+.dlg-row input {
+  width: 100%; margin-top: 6px; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 6px; padding: 8px 10px; font-family: inherit; font-size: 14px; outline: none;
+}
+.dlg-row input:focus { border-color: var(--green); }
+.dlg-label { color: var(--dim); font-size: 11px; }
+.dlg-clash { color: var(--red); font-size: 12px; background: rgba(255,107,107,0.10); border: 1px solid #5a2a2a; border-radius: 6px; padding: 8px 10px; }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.dlg-actions button { padding: 7px 16px; font-size: 13px; }
+.dlg-actions button.primary { border-color: var(--green); color: #07110b; background: var(--green); font-weight: bold; }
+.dlg-actions button.flat { color: var(--dim); }
+.dlg-actions button:disabled { opacity: 0.4; cursor: not-allowed; }

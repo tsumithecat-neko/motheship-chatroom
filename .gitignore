@@ -1,1 +1,11 @@
 /.workbuddy
+# 运行时数据（聊天记录 / 地图 / 频道），由服务启动自动生成，不入库
+/data/
+/build/data/
+# 分发的可执行程序与免安装运行时
+/build/*.exe
+/node.exe
+/node_modules/
+# 本地预览截图等
+/public/_*.html
+/start.log

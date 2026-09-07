@@ -38,8 +38,10 @@
           <span id="roomName" class="dim"></span>
         </div>
         <div class="top-actions">
+          <button id="mapBtn">地图</button>
           <button id="charBtn">角色卡</button>
           <button id="helpBtn">指令</button>
+          <button id="logoutBtn" title="退出登录">登出</button>
         </div>
       </header>
 
@@ -143,6 +145,124 @@
   </div>
 </div>
 
+<div id="mapModal" class="overlay hidden">
+  <div class="panel map-panel">
+    <div class="modal-head">
+      <div class="logo">战术地图 <span class="dim">// <span id="mapScope">主频道</span></span></div>
+      <div class="map-head-actions">
+        <span class="map-mode gm-only" id="mapModeWrap">
+          <button id="mapModeEdit" class="mini mode on">编辑</button>
+          <button id="mapModeShow" class="mini mode">显示</button>
+        </span>
+        <span class="map-pub gm-only" id="mapPubWrap">
+          <button id="mapPublishFloor" class="mini amber" title="把当前楼层的房间全部对玩家公开">公开本层</button>
+          <button id="mapPublishAll" class="mini amber" title="把全部楼层的房间全部对玩家公开">公开全部</button>
+        </span>
+        <button id="mapHelp" class="mini">?</button>
+        <button id="mapUndo" class="mini gm-only">撤销</button>
+        <button id="mapRedo" class="mini gm-only">重做</button>
+        <button id="mapPng" class="mini">PNG</button>
+        <button id="mapDel" class="mini danger hidden">删除</button>
+        <button id="mapClose">✕</button>
+      </div>
+    </div>
+    <div class="map-body">
+      <div class="map-side">
+        <div class="map-sec gm-only" data-edit="1">
+          <div class="map-sec-t">绘制房间</div>
+          <div class="map-btns">
+            <button class="mini tool" data-tool="rect">矩形</button>
+            <button class="mini tool" data-tool="circle">圆形</button>
+          </div>
+          <div class="map-hint">圆形房间用「通道」轻切进圆周即可连通</div>
+        </div>
+        <div class="map-sec gm-only" data-edit="1">
+          <div class="map-sec-t">走廊通道</div>
+          <div class="map-btns">
+            <button class="mini tool" data-tool="passage">通道</button>
+          </div>
+          <div class="map-hint">拖出走廊，伸到房间/通道边 1 格内即互通（圆形可轻切）</div>
+        </div>
+        <div class="map-sec gm-only" data-edit="1">
+          <div class="map-sec-t">门 / 梯</div>
+          <div class="map-btns">
+            <button class="mini tool" data-tool="door">门 / 梯</button>
+          </div>
+          <div class="map-hint">点两个相邻对象放门；跨层自动成梯；门可选后锁</div>
+        </div>
+        <div class="map-sec gm-only">
+          <div class="map-sec-t">对选中元素</div>
+          <div class="map-btns">
+            <button class="mini" id="mapEntryBtn">设为入口</button>
+            <button class="mini" id="mapExploreBtn">揭晓/隐藏</button>
+            <button class="mini" id="mapOpenBtn">开放/关闭</button>
+            <button class="mini hidden" id="mapLockBtn">锁门</button>
+          </div>
+          <div class="map-hint">GM 在编辑或显示模式都可点选房间；「开放/关闭」决定玩家能否进入该房间</div>
+        </div>
+        <div class="map-sec gm-only" data-edit="1">
+          <div class="map-sec-t">工具</div>
+          <div class="map-btns">
+            <button class="mini tool" data-tool="select">选择</button>
+          </div>
+          <div class="map-hint">门/房间/通道可选中 · 右键拖拽平移</div>
+        </div>
+        <div class="map-sec">
+          <div class="map-sec-t">视图</div>
+          <div class="map-btns">
+            <button class="mini" id="mapZoomOut">－</button>
+            <button class="mini" id="mapZoomIn">＋</button>
+            <button class="mini" id="mapFit">适应</button>
+          </div>
+          <div class="map-hint" id="mapViewHint">滚轮缩放 · 拖拽平移</div>
+        </div>
+      </div>
+      <div class="map-main">
+        <div class="map-floors gm-only" id="mapFloors"></div>
+        <div class="map-tipbar" id="mapTip"></div>
+        <div class="map-canvas-wrap" id="mapWrap"><canvas id="mapCanvas"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 地图帮助（页面内浮层） -->
+<div id="mapHelpDlg" class="overlay hidden">
+  <div class="panel dlg-panel map-help-panel">
+    <div class="dlg-head">地图操作说明</div>
+    <div class="dlg-body map-help-body">
+      <p><b>移动</b>：聊天框 <code>!go 房间名</code>（只能去相邻未锁处）；<code>!here</code> 查看可去。</p>
+      <p><b>编辑（GM）</b>：先打开「编辑」模式。拖出矩形/圆形房间，再拖出「通道」走廊把房间连起来——通道贴到任何对象旁 1 格内即连通（圆形可轻微切入，最多 1 格，画时绿框提示已连通）。在相邻对象间放「门/梯」（门可锁，锁后玩家过不去；跨层放"梯"门）。</p>
+      <p><b>楼层</b>：「＋楼层」加层；选中房间可设入口/揭晓隐藏/删除；选中门可锁/开锁/删除。</p>
+      <p><b>公开</b>：「一键公开」把房间展示给玩家。</p>
+    </div>
+    <div class="dlg-actions">
+      <button class="btn primary" id="mapHelpOk">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新建房间：确认 + 命名对话框 -->
+<div id="createDlg" class="overlay hidden">
+  <div class="panel dlg-panel">
+    <div class="dlg-head" id="createTitle">新建房间</div>
+    <div class="dlg-body">
+      <div class="dlg-row dim" id="createType">矩形房间</div>
+      <div class="dlg-row dim" id="createSize">尺寸：3 × 3 格</div>
+      <div class="dlg-row">
+        <label class="dlg-label">名称</label>
+        <input id="createName" type="text" maxlength="20" placeholder="留空则用编号" autocomplete="off" />
+      </div>
+      <div class="dlg-clash" id="createClash" style="display:none"></div>
+    </div>
+    <div class="dlg-actions">
+      <button class="btn flat" id="createCancel">取消</button>
+      <button class="btn primary" id="createConfirm">确认创建</button>
+    </div>
+  </div>
+</div>
+
 <script src="/app.js"></script>
+<script src="/map.js"></script>
 </body>
 </html>

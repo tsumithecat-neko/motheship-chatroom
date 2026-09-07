@@ -2,26 +2,22 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 
-set "NODE=node"
-rem 默认 GM 口令，可改。任何人输入该口令即获得 GM 权限（可见/管理所有频道）。
-set "GM_CODE=warden"
+echo [1] boot > start.log
+set "NODE=node.exe"
+if exist "%~dp0node.exe" set "NODE=%~dp0node.exe"
 
-rem 优先用同目录自带的 node.exe（免安装 Node 即可运行）
-if exist "%~dp0node.exe" (
-  set "NODE=%~dp0node.exe"
-) else if exist "C:\Users\Administrator\.workbuddy\binaries\node\versions\22.22.2-2\node.exe" (
-  set "NODE=C:\Users\Administrator\.workbuddy\binaries\node\versions\22.22.2-2\node.exe"
-)
-
+echo [2] node=%NODE% >> start.log
 if not exist "%NODE%" (
-  where node >nul 2>nul
-  if %errorlevel%==0 ( set "NODE=node" ) else (
-    echo 未检测到 Node.js，请先安装：https://nodejs.org
-    pause
-    exit /b 1
-  )
+  echo [E] node not found >> start.log
+  echo 未检测到 Node.js，请先安装：https://nodejs.org
+  pause
+  exit /b 1
 )
 
-echo 正在启动母舰通讯终端...
+echo [3] open browser + run server >> start.log
+start "" http://localhost:8080
 "%NODE%" server.js
-pause
+
+echo [4] server exited >> start.log
+echo 服务已停止。按任意键关闭窗口。
+pause >nul

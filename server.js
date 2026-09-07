@@ -48,6 +48,322 @@ function saveMessages() {
 function saveChars() { fs.writeFile(CHARFILE, JSON.stringify(characters), () => {}); }
 function saveRooms() { fs.writeFile(ROOMFILE, JSON.stringify(rooms), () => {}); }
 
+
+// ---- tactical map v4 (多楼层对象模型, 每频道一份) ----
+// map.json per channel: { floors:[], rooms:[], passages:[], doors:[], entry:null }
+//  - floor : { id, name }，楼层。zone 通过 floorId 归属楼层。
+//  - room  : 可站、可命名、受房间级迷雾(explored)控制；{ id, floorId, shape, x,y,w,h|cx,cy,r, name, explored }
+//  - passage: 通道(走廊)，无需命名、恒可见、可站；{ id, floorId, x,y,w,h }
+//  - door  : 门/梯。绑定一对 zone { a, b }。移动可达 = 几何相邻(同层相贴/相交)，
+//            或该对有跨层梯门(ladder)。相邻即默认可走；若这对上面有 locked 门则被阻断。
+//            { id, a, b, type:'door'|'ladder', locked:bool }
+const MAPFILE = path.join(DATA, 'map.json');
+let maps = {};
+try { maps = JSON.parse(fs.readFileSync(MAPFILE, 'utf8')); } catch (e) { maps = {}; }
+const mapVer = {};                                   // channelId -> version, bump on any change
+function saveMaps() { fs.writeFile(MAPFILE, JSON.stringify(maps), () => {}); }
+function mapUid(p) { return (p || 'x') + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function emptyMap() { return { floors: [{ id: 'F1', name: '1F' }], rooms: [], passages: [], doors: [], entry: null }; }
+// 兼容旧结构(v3: links 连接线 / 通道带 name)：links 升级为 door(旧线=未锁门/跨层=梯)；
+// 通道名弃用(通道不取名)。新结构只认 doors。
+function migrateMap(m) {
+  if (Array.isArray(m.links) && m.links.length && !Array.isArray(m.doors)) {
+    m.doors = m.links.map((l) => ({ id: l.id, a: l.a, b: l.b, type: l.type === 'ladder' ? 'ladder' : 'door', locked: false }));
+    delete m.links;
+  }
+  if (!Array.isArray(m.doors)) m.doors = [];
+  if (Array.isArray(m.passages)) m.passages.forEach((p) => { delete p.name; });
+  return m;
+}
+function getMap(ch) {
+  if (!maps[ch] || !Array.isArray(maps[ch].rooms)) { maps[ch] = emptyMap(); saveMaps(); }
+  migrateMap(maps[ch]);
+  if (!Array.isArray(maps[ch].floors) || !maps[ch].floors.length) maps[ch].floors = [{ id: 'F1', name: '1F' }];
+  return maps[ch];
+}
+function findZone(m, id) {
+  return (m.rooms || []).find((r) => r.id === id) || (m.passages || []).find((p) => p.id === id) || null;
+}
+function zoneFloor(z) { return (z && z.floorId) || 'F1'; }
+function bumpMap(ch) { mapVer[ch] = (mapVer[ch] || 0) + 1; }
+
+// 房间/通道内部的整数站格(逻辑格, 每格 1 单位)。rect: x..x+w-1/y..y+h-1；circle: 距中心<=r 的整数点。
+function zoneCells(z) {
+  const out = [];
+  if (z.shape === 'circle') {
+    const r = Math.max(1, Math.round(z.r || 1));
+    for (let y = Math.floor(z.cy - r); y <= Math.ceil(z.cy + r); y++)
+      for (let x = Math.floor(z.cx - r); x <= Math.ceil(z.cx + r); x++)
+        if ((x - z.cx) * (x - z.cx) + (y - z.cy) * (y - z.cy) <= r * r + 0.01) out.push({ x, y });
+    return out;
+  }
+  const w = Math.max(1, Math.round(z.w || 1)), h = Math.max(1, Math.round(z.h || 1));
+  for (let y = Math.round(z.y); y < Math.round(z.y) + h; y++) for (let x = Math.round(z.x); x < Math.round(z.x) + w; x++) out.push({ x, y });
+  return out;
+}
+
+// ---- 门/可达：真实几何相邻 + 门判定 ----
+// 相邻定义：同层两对象(房间/通道，含圆)的真实最短距离 ≤ ADJ(容差1格) 即可走。
+// 这样：贴边(gap≈0)可走；通道轻微切入圆/对象(≤ADJ)也算可走——解决"圆没有直边、难贴"的痛点。
+// 创建时只禁止"过度穿透"(gap < -ADJ)，即允许最多轻切1格。
+const ADJ = 1;                                                        // 相邻/轻切容差(格)
+function zoneBox(z) {
+  if (z.shape === 'circle') return { x0: z.cx - z.r, y0: z.cy - z.r, x1: z.cx + z.r, y1: z.cy + z.r };
+  return { x0: z.x, y0: z.y, x1: z.x + (z.w || 1), y1: z.y + (z.h || 1) };
+}
+// 点到轴对齐矩形最近距离(≥0)
+function distPtRect(x, y, rc) { const dx = Math.max(rc.x0 - x, 0, x - rc.x1), dy = Math.max(rc.y0 - y, 0, y - rc.y1); return Math.hypot(dx, dy); }
+function rectRectGap(a, b) {                                          // 负=重叠深度
+  const xov = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0);
+  const yov = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
+  if (xov < 0 && yov < 0) return Math.hypot(-xov, -yov);              // 斜向分离
+  if (xov >= 0 && yov >= 0) return -Math.min(xov, yov);               // 双向重叠 => 切入深度
+  return xov < 0 ? -xov : -yov;                                       // 仅单轴重叠 => 另一边间距
+}
+function circleRectGap(c, rc) { return distPtRect(c.cx, c.cy, rc) - c.r; }   // 圆心到矩形 - r(负=切入)
+function circleCircleGap(c1, c2) { return Math.hypot(c1.cx - c2.cx, c1.cy - c2.cy) - c1.r - c2.r; }
+// 两 zone 真实最短间隙(≤0 表示已相交/切入)。调用方须先确保同层。
+function shapeGap(a, b) {
+  const ac = a.shape === 'circle', bc = b.shape === 'circle';
+  if (ac && bc) return circleCircleGap(a, b);
+  if (ac || bc) { const c = ac ? a : b, rc = ac ? zoneBox(b) : zoneBox(a); return circleRectGap(c, rc); }
+  return rectRectGap(zoneBox(a), zoneBox(b));
+}
+// 同层几何相邻(贴边或轻切≤ADJ)即"可走"
+function touches(a, b) { if (!a || !b || zoneFloor(a) !== zoneFloor(b)) return false; return shapeGap(a, b) <= ADJ; }
+function doorKey(idA, idB) { return idA < idB ? idA + '::' + idB : idB + '::' + idA; }
+// 两 zone 间的门对象(不分方向)
+function doorBetween(m, a, b) { return (m.doors || []).find((d) => d.a === a && d.b === b || d.b === a && d.a === b) || null; }
+// 从某 zone 判定能否走到目标 zone：
+//  同层相邻(真实距离≤ADJ)：若该对有门且 locked => 阻断；否则可走。
+//  跨层：仅当存在 type=ladder 且未锁的门(视为两楼对应位置打通)才可走。
+function canWalk(m, fromId, toId) {
+  const a = findZone(m, fromId), b = findZone(m, toId); if (!a || !b) return false;
+  // 走进"未开放"房间(open===false)：即便有通道/门(含未锁)也一律不可入。房间有 shape 字段，通道没有。
+  if (b.shape && b.open === false) return false;
+  const d = doorBetween(m, fromId, toId);
+  if (zoneFloor(a) === zoneFloor(b)) {
+    if (!touches(a, b)) return false;                                  // 同层不相邻 => 不可达
+    return !(d && d.locked);                                           // 相邻且无锁门 => 可走
+  }
+  return !!(d && d.type === 'ladder' && !d.locked);                   // 跨层必须显式建梯
+}
+// 沿"未锁相邻/梯"可达的所有 zone（BFS）。返回 Set<id>；路径上遇锁门即断。
+function reachSet(m, fromId) {
+  const seen = new Set([fromId]); const q = [fromId];
+  while (q.length) {
+    const cur = q.pop();
+    for (const z of (m.rooms || []).concat(m.passages || [])) {
+      if (seen.has(z.id) || !canWalk(m, cur, z.id)) continue;
+      seen.add(z.id); q.push(z.id);
+    }
+  }
+  return seen;
+}
+
+// ---- 玩家位置(内存, 重启清零)。key = channel::呼号 -> { roomId, x, y } ----
+const ppos = {};
+function pkey(call, ch) { return ch + '::' + call; }
+function occupiedByOthers(m, zoneId, excludeCall) {
+  const s = new Set();
+  for (const k in ppos) { const p = ppos[k]; if (p.roomId === zoneId && k.split('::')[1] !== excludeCall) s.add(p.x + ',' + p.y); }
+  return s;
+}
+function freeSlot(m, zone, call) {
+  const occ = occupiedByOthers(m, zone.id, call);
+  for (const c of zoneCells(zone)) if (!occ.has(c.x + ',' + c.y)) return { x: c.x, y: c.y };
+  return { x: 0, y: 0 };                                // 满了就落到(0,0)附近，极少发生
+}
+function placeAt(ch, call, zoneId, optOut) {
+  const m = getMap(ch), z = findZone(m, zoneId);
+  if (!z) return false;
+  const s = freeSlot(m, z, call);
+  ppos[pkey(call, ch)] = { roomId: zoneId, x: s.x, y: s.y };
+  if (optOut) optOut();
+  return true;
+}
+// 玩家首次出现在某频道：若有地图且有入口，出生到入口。
+function ensurePlayer(ch, call) {
+  const m = maps[ch];
+  if (!m || !Array.isArray(m.rooms)) return false;
+  if (ppos[pkey(call, ch)]) return true;
+  if (!m.entry || !findZone(m, m.entry)) return false;
+  return placeAt(ch, call, m.entry);
+}
+
+// ---- 房间级迷雾 + 视图过滤 ----
+function isExploredRoom(r) { return !!r.explored; }
+function collectPlayers(m) {
+  const byZone = {};
+  for (const k in ppos) {
+    const sep = k.indexOf('::'); if (sep < 0) continue;
+    const p = ppos[k];
+    (byZone[p.roomId] = byZone[p.roomId] || []).push({ call: k.slice(sep + 2), x: p.x, y: p.y });
+  }
+  return byZone;
+}
+// 返回某频道某玩家可见的视图副本；GM 恒全量。
+function viewMap(ch, call, gmFlag) {
+  const m = getMap(ch);
+  if (gmFlag) {
+    return {
+      entry: m.entry || null,
+      floors: JSON.parse(JSON.stringify(m.floors || [])),
+      rooms: JSON.parse(JSON.stringify(m.rooms || [])),
+      passages: JSON.parse(JSON.stringify(m.passages || [])),
+      doors: JSON.parse(JSON.stringify(m.doors || [])),
+      players: collectPlayers(m)
+    };
+  }
+  const my = ppos[pkey(call, ch)];
+  const myZone = my ? findZone(m, my.roomId) : null;
+  // 玩家视角所在层 = 其所在 zone 的楼层；未出生/无入口则取入口层，仍无则 F1
+  const myFloor = myZone ? zoneFloor(myZone) : (m.entry ? zoneFloor(findZone(m, m.entry)) : 'F1');
+  // 该层内可见房间：已探索 或 我正身处其中
+  const visRoom = new Set((m.rooms || []).filter((r) => zoneFloor(r) === myFloor && (isExploredRoom(r) || (my && r.id === my.roomId))).map((r) => r.id));
+  // 该层通道恒可见
+  const visPass = new Set((m.passages || []).filter((p) => zoneFloor(p) === myFloor).map((p) => p.id));
+  const roomVisible = (id) => visRoom.has(id) || visPass.has(id);
+  const rooms = (m.rooms || []).filter((r) => visRoom.has(r.id)).map((r) => ({ id: r.id, shape: r.shape, x: r.x, y: r.y, w: r.w, h: r.h, cx: r.cx, cy: r.cy, r: r.r, name: r.name, floorId: zoneFloor(r), explored: true, open: r.open !== false }));
+  const passages = (m.passages || []).filter((p) => visPass.has(p.id)).map((p) => ({ id: p.id, x: p.x, y: p.y, w: p.w, h: p.h, floorId: zoneFloor(p) }));
+  // 门/梯：同层两 zone 都在本层可见才显示；跨层梯本层那端可见即显示(标注去向)。locked 不隐藏(玩家需看到"锁着的门")
+  const doors = (m.doors || []).filter((d) => {
+    const a = findZone(m, d.a), b = findZone(m, d.b); if (!a || !b) return false;
+    const af = zoneFloor(a), bf = zoneFloor(b);
+    if (af === bf) return af === myFloor && roomVisible(d.a) && roomVisible(d.b);
+    if (af === myFloor) return roomVisible(d.a);
+    if (bf === myFloor) return roomVisible(d.b);
+    return false;
+  }).map((d) => ({ id: d.id, a: d.a, b: d.b, type: d.type || 'door', locked: !!d.locked }));
+  const byZone = collectPlayers(m), players = {};
+  for (const zid in byZone) { const z = findZone(m, zid); if (z && zoneFloor(z) === myFloor && roomVisible(zid)) players[zid] = byZone[zid]; }
+  return { entry: m.entry || null, floors: JSON.parse(JSON.stringify(m.floors || [])), curFloor: myFloor, rooms, passages, doors, players };
+}
+
+// ---- 地图 op 应用（绘图权限仅 GM；位置类移动走 doGo，不由 op 处理）----
+function applyMapOps(m, ops, user, gmFlag) {
+  if (!Array.isArray(ops) || !gmFlag) return false;
+  let changed = false;
+  for (const op of ops) {
+    if (!op || !op.t) continue;
+    if (op.t === 'room.upsert') {
+      const r = op.room || {};
+      const shape = r.shape === 'circle' ? 'circle' : 'rect';
+      const fid = ('' + (r.floorId || 'F1')).slice(0, 12) || 'F1';
+      const clean = shape === 'circle'
+        ? { id: r.id || mapUid('R'), floorId: fid, shape, cx: +r.cx, cy: +r.cy, r: Math.max(1, +r.r || 2), name: (r.name || '').slice(0, 20), explored: !!r.explored }
+        : { id: r.id || mapUid('R'), floorId: fid, shape, x: Math.round(+r.x), y: Math.round(+r.y), w: Math.max(1, Math.round(+r.w || 3)), h: Math.max(1, Math.round(+r.h || 3)), name: (r.name || '').slice(0, 20), explored: !!r.explored };
+      const i = (m.rooms || []).findIndex((z) => z.id === clean.id);
+      if (i >= 0) m.rooms[i] = Object.assign({}, m.rooms[i], clean); else (m.rooms = m.rooms || []).push(clean);
+      changed = true;
+    } else if (op.t === 'room.del') {
+      const i = (m.rooms || []).findIndex((r) => r.id === op.id); if (i >= 0) { m.rooms.splice(i, 1); changed = true; }
+    } else if (op.t === 'passage.upsert') {
+      const p = op.passage || {};
+      const fid = ('' + (p.floorId || 'F1')).slice(0, 12) || 'F1';
+      const clean = { id: p.id || mapUid('P'), floorId: fid, x: Math.round(+p.x), y: Math.round(+p.y), w: Math.max(1, Math.round(+p.w || 2)), h: Math.max(1, Math.round(+p.h || 2)) };
+      const i = (m.passages || []).findIndex((z) => z.id === clean.id);
+      if (i >= 0) m.passages[i] = Object.assign({}, m.passages[i], clean); else (m.passages = m.passages || []).push(clean);
+      changed = true;
+    } else if (op.t === 'passage.del') {
+      const i = (m.passages || []).findIndex((p) => p.id === op.id); if (i >= 0) { m.passages.splice(i, 1); changed = true; }
+    } else if (op.t === 'door.set') {
+      // 安放一扇门/梯：绑定两 zone。同层须几何相邻；跨层自动视为梯(ladder)。同对去重。
+      const d = op.door || {};
+      const a = findZone(m, d.a), b = findZone(m, d.b);
+      if (!a || !b || d.a === d.b) continue;
+      const cross = zoneFloor(a) !== zoneFloor(b);
+      if (!cross && !touches(a, b)) continue;                  // 同层不相邻不能安普通门
+      const clean = { id: d.id || mapUid('D'), a: d.a, b: d.b, type: d.type === 'ladder' || cross ? 'ladder' : 'door', locked: !!d.locked };
+      const key = doorKey(d.a, d.b); let i = -1;
+      for (let z = 0; z < (m.doors || []).length; z++) if (doorKey(m.doors[z].a, m.doors[z].b) === key) { i = z; break; }
+      if (i >= 0) m.doors[i] = Object.assign({}, m.doors[i], clean); else (m.doors = m.doors || []).push(clean);
+      changed = true;
+    } else if (op.t === 'door.del') {
+      const i = (m.doors || []).findIndex((x) => x.id === op.id || (x.a === op.a && x.b === op.b) || (x.b === op.a && x.a === op.b)); if (i >= 0) { m.doors.splice(i, 1); changed = true; }
+    } else if (op.t === 'door.lock') {
+      const i = (m.doors || []).findIndex((x) => x.id === op.id || doorKey(x.a, x.b) === doorKey(op.a || '', op.b || '')); if (i >= 0) { m.doors[i].locked = !!op.v; changed = true; }
+    } else if (op.t === 'entry') {
+      if (findZone(m, op.id)) { m.entry = op.id; changed = true; }
+    } else if (op.t === 'room.open') {
+      // 开放/关闭某房间：open===false 的房间玩家走不进去（不影响迷雾 explored 决定的可见性）。
+      const r = (m.rooms || []).find((x) => x.id === op.id); if (r && r.open !== !!op.v) { if (op.v) delete r.open; else r.open = false; changed = true; }
+    } else if (op.t === 'explore') {
+      const r = (m.rooms || []).find((x) => x.id === op.id); if (r) { r.explored = !!op.v; changed = true; }
+    } else if (op.t === 'explore.floor') {
+      const fid = op.floor || 'F1'; let any = false; (m.rooms || []).forEach((x) => { if (zoneFloor(x) === fid && x.explored !== !!op.v) { x.explored = !!op.v; any = true; } }); if (any) changed = true;
+    } else if (op.t === 'explore.all') {
+      let any = false; (m.rooms || []).forEach((x) => { if (x.explored !== !!op.v) { x.explored = !!op.v; any = true; } }); if (any) changed = true;
+    } else if (op.t === 'floor.add') {
+      const f = op.floor || {}; const fid = f.id || mapUid('F');
+      if (!(m.floors || []).some(x => x.id === fid)) { (m.floors = m.floors || []).push({ id: fid, name: (f.name || ('层' + (m.floors.length + 1))).slice(0, 12) }); changed = true; }
+    } else if (op.t === 'floor.del') {
+      const fid = op.id; const i = (m.floors || []).findIndex((f) => f.id === fid); if (i >= 0 && m.floors.length > 1) {
+        m.floors.splice(i, 1);
+        const gone = new Set(); (m.rooms || []).forEach((x) => { if (zoneFloor(x) === fid) gone.add(x.id); }); (m.passages || []).forEach((x) => { if (zoneFloor(x) === fid) gone.add(x.id); });
+        m.rooms = (m.rooms || []).filter((x) => !gone.has(x.id)); m.passages = (m.passages || []).filter((x) => !gone.has(x.id));
+        m.doors = (m.doors || []).filter((d) => !gone.has(d.a) && !gone.has(d.b));
+        if (m.entry && gone.has(m.entry)) m.entry = null;
+        changed = true;
+      }
+    }
+  }
+  return changed;
+}
+
+// ---- !go 移动 ----
+// 可达 = 沿"未锁相邻/梯"连续走通（房间与通道都算可经过）。锁着的门把路断开。
+function doGo(ch, call, targetName) {
+  const m = getMap(ch);
+  if (!m.entry || !findZone(m, m.entry)) return { ok: false, msg: '这张地图还没有「入口房间」，请 GM 先把一个房间设为入口。' };
+  // 先确保自己已出生
+  if (!ppos[pkey(call, ch)]) { placeAt(ch, call, m.entry); }
+  const cur = ppos[pkey(call, ch)];
+  const name = (targetName || '').trim();
+  const target = (m.rooms || []).find((r) => r.name === name || r.id === name)
+    || (m.passages || []).find((p) => p.id === name);
+  if (!target) return { ok: false, msg: '没找到名为「' + (name || '?') + '」的房间。可用 !here 查看当前所在与可去之处。' };
+  if (target.id === cur.roomId) return { ok: true, moved: false, msg: '你已经在「' + zoneLabel(target) + '」了。' };
+  if (target.shape && target.open === false) return { ok: false, msg: '「' + zoneLabel(target) + '」尚未开放，进不去。' };
+  const reach = reachSet(m, cur.roomId);
+  if (!reach.has(target.id)) {
+    const direct = doorBetween(m, cur.roomId, target.id);
+    if (direct && direct.locked) return { ok: false, msg: '通往「' + zoneLabel(target) + '」的门是锁着的，打不开。' };
+    return { ok: false, msg: '「' + zoneLabel(target) + '」暂时走不过去（通道未接通，或有锁着的门挡路）。可用 !here 查看可去之处。' };
+  }
+  const s = freeSlot(m, target, call);
+  cur.roomId = target.id; cur.x = s.x; cur.y = s.y;
+  let revealed = false;
+  const r = (m.rooms || []).find((x) => x.id === target.id);
+  if (r && !r.explored) { r.explored = true; revealed = true; }
+  const d = doorBetween(m, cur.roomId, target.id);
+  return { ok: true, moved: true, revealed, via: (d && d.type === 'ladder' ? 'ladder' : 'walk'), msg: call + ' → ' + zoneLabel(target) };
+}
+function zoneLabel(z) { return (z.name || (z.shape ? '房间' : '通道')) || (z.id || ''); }
+// !here：列出沿未锁通道/梯能到达的房间（含走廊，标注去向）
+function here(ch, call) {
+  const m = getMap(ch);
+  if (!m || !Array.isArray(m.rooms) || !m.rooms.length) return '这张频道还没有地图。';
+  if (!m.entry) return '地图还没有入口，等 GM 把某个房间设为入口。';
+  if (!ppos[pkey(call, ch)]) placeAt(ch, call, m.entry);
+  const cur = ppos[pkey(call, ch)];
+  const cz = findZone(m, cur.roomId);
+  if (!cz) return '你目前不在任何房间。';
+  const curFloor = zoneFloor(cz);
+  const reach = reachSet(m, cur.roomId);
+  const can = [];
+  // 列出可达且能作为 !go 目标的"房间"；走廊仅作通道不计为去处名。
+  for (const z of m.rooms || []) {
+    if (z.id === cur.roomId || !reach.has(z.id)) continue;
+    const d = doorBetween(m, cur.roomId, z.id);
+    const cross = zoneFloor(z) !== curFloor;
+    const mark = cross ? '（梯）' : (d && d.locked ? '🔒' : '');
+    can.push(zoneLabel(z) + mark);
+  }
+  return '你在「' + zoneLabel(cz) + '」' + (can.length ? '。可去：' + can.join('、') : '。这里没有出口。') + ' ｜ 用法：!go 房间名';
+}
+
+
 // ---- clients / broadcast ----
 const clients = [];
 const stress = {};
@@ -175,7 +491,22 @@ function parseDice(text, user, room, gm) {
   const userCls = card ? (card.cls || '') : '';
 
   if (/^(help|\?)$/i.test(cmd)) {
-    return { type: 'system', text: '指令 → !roll 2d10+5 [adv|dis] · !d100 · !d20 · !check 55 [adv|dis] · !stress [n] · !panic [adv|dis] · !help ｜ !panic 触发母舰 d20 恐慌表，自动读取你本频道角色卡的职业创伤反应' };
+    return { type: 'system', text: '指令 → !roll 2d10+5 [adv|dis] · !d100 · !check 55 [adv|dis] · !stress [n] · !panic [adv|dis] · !go 房间名 · !here · !help ｜ !go 沿地图通道移动到房间，!here 看当前所在与可去之处；!panic 触发母舰 d20 恐慌表并读取你本频道角色卡职业的创伤反应' };
+  }
+
+  // 地图移动：!go 房间名 / !here
+  const gom = cmd.match(/^go\s+(.+)$/i);
+  if (gom) {
+    const rr = doGo(room || 'general', user, gom[1]);
+    if (rr.ok && rr.moved) {
+      mapVer[room] = (mapVer[room] || 0) + 1;
+      broadcast(room, { type: 'map', room, v: mapVer[room] });
+      return { type: 'msg', user, text: rr.msg + (rr.revealed ? '（首次进入，房间已被你揭示）' : '') };
+    }
+    return { type: 'system', text: rr.msg };
+  }
+  if (/^here$/i.test(cmd)) {
+    return { type: 'system', text: here(room || 'general', user) };
   }
 
   let m = cmd.match(/^stress\s*(\d+)?$/i);
@@ -513,6 +844,50 @@ const server = http.createServer((req, res) => {
     const roomObj = findRoom(room);
     if (!roomObj || !canAccess(user, gm, roomObj)) { res.writeHead(403); res.end('denied'); return; }
     sendJSON(res, { room, name: roomObj.name, messages: messages[room] || [] });
+    return;
+  }
+
+  // ---- tactical map (room/passage/link object model) ----
+  if (req.method === 'GET' && p === '/api/map') {
+    const user = (url.searchParams.get('user') || '').slice(0, 20);
+    const gm = url.searchParams.get('gm') || '';
+    const gmFlag = isGM(gm);
+    const room = url.searchParams.get('room') || 'general';
+    if (room === '*') {
+      if (!gmFlag) { res.writeHead(403); res.end('denied'); return; }
+      const out = {};
+      for (const r of rooms) if (maps[r.id]) out[r.id] = { v: mapVer[r.id] || 0, map: maps[r.id] };
+      sendJSON(res, { all: true, maps: out });
+      return;
+    }
+    const roomObj = findRoom(room);
+    if (!roomObj || !canAccess(user, gm, roomObj)) { res.writeHead(403); res.end('denied'); return; }
+    sendJSON(res, { room, v: mapVer[room] || 0, gm: gmFlag, map: viewMap(room, user, gmFlag) });
+    return;
+  }
+
+  if (req.method === 'POST' && p === '/api/map/op') {
+    readBody(req, (b) => {
+      let d; try { d = JSON.parse(b); } catch (e) { res.writeHead(400); res.end('bad'); return; }
+      const room = d.room || 'general';
+      const roomObj = findRoom(room);
+      if (!roomObj) { sendJSON(res, { ok: 0, error: 'no_room' }); return; }
+      const user = ((d.user || '') + '').slice(0, 20) || '匿名';
+      const gm = d.gm || '';
+      const gmFlag = isGM(gm);
+      if (!canAccess(user, gm, roomObj)) { sendJSON(res, { ok: 0, error: 'no_access' }); return; }
+      if (!gmFlag && (roomObj.muted || []).map((x) => ('' + x).trim()).includes(user)) {
+        sendJSON(res, { ok: 0, error: 'muted' }); return;
+      }
+      const m = getMap(room);
+      if (applyMapOps(m, d.ops || [], user, gmFlag)) {
+        saveMaps();
+        mapVer[room] = (mapVer[room] || 0) + 1;
+        // 只广播版本号：玩家侧重新拉取（服务端已做房间级过滤）
+        broadcast(room, { type: 'map', room, v: mapVer[room] });
+      }
+      sendJSON(res, { ok: 1, v: mapVer[room] || 0 });
+    });
     return;
   }
 

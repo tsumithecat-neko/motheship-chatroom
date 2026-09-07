@@ -89,8 +89,10 @@ function appendDice(m) {
 }
 
 function handleEvent(m) {
+  if (m.type === 'map') { if (window.onMapEvent) window.onMapEvent(m); return; }
   if (m.kick) {
     appendSystem(m.text);
+    if (window.closeMap) closeMap();
     if (!isGM) {
       viewRoom = 'general';
       document.querySelectorAll('.room-item').forEach((el) => el.classList.toggle('active', el.dataset.id === 'general'));
@@ -205,6 +207,7 @@ function mkRoomItem(id, name, locked) {
 function switchRoom(id) {
   if (id === viewRoom) return;
   viewRoom = id;
+  if (window.closeMap) closeMap();
   document.querySelectorAll('.room-item').forEach((el) => el.classList.toggle('active', el.dataset.id === id));
   $('#roomName').textContent = (id === '__all__' ? '全部频道' : (roomNames[id] || id));
   if (!isGM) { connectSSE(); }   // non-GM must reconnect to new room
@@ -432,6 +435,23 @@ $('#roomCancel').addEventListener('click', () => {
 $('#roomManageBtn').addEventListener('click', openRoomAdmin);
 $('#roomClose').addEventListener('click', closeRoomAdmin);
 
-// restore
+// restore + 自动登录（记住登录状态）
 $('#nameInput').value = localStorage.getItem('mothership_user') || '';
 $('#gmInput').value = localStorage.getItem('mothership_gm') || '';
+if (($('#nameInput').value || '').trim()) connect();
+
+// ---- logout ----
+$('#logoutBtn').addEventListener('click', () => {
+  if (es) { es.close(); es = null; }
+  localStorage.removeItem('mothership_user');
+  localStorage.removeItem('mothership_gm');
+  user = ''; gmCode = ''; isGM = false;
+  $('#nameInput').value = ''; $('#gmInput').value = '';
+  $('#whoami').textContent = '';
+  $('#gmBadge').classList.add('hidden');
+  $('#connDot').className = 'dot off'; $('#connText').textContent = '离线';
+  $('#log').innerHTML = '';
+  $('#app').classList.add('hidden');
+  $('#login').classList.remove('hidden');
+  $('#nameInput').focus();
+});
