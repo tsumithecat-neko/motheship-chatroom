@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MOTHERSHIP // 通讯终端</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="scanlines"></div>
+
+<div id="login" class="overlay">
+  <div class="panel login-card">
+    <div class="logo">◈ MOTHERSHIP</div>
+    <div class="sub">局域网络通讯终端 · v2.0</div>
+    <input id="nameInput" maxlength="20" placeholder="输入你的呼号 / 船员代号" />
+    <input id="gmInput" maxlength="40" placeholder="GM 口令（可选，留空为普通船员）" />
+    <button id="connectBtn">接入频道</button>
+    <div class="hint">接入后其他人可在同网段用局域网地址加入</div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="layout">
+    <aside class="rooms">
+      <div class="rooms-head">频道</div>
+      <div id="roomList" class="room-list"></div>
+      <button id="roomManageBtn" class="room-manage hidden">⚙ 管理频道</button>
+    </aside>
+
+    <section class="main-col">
+      <header class="topbar">
+        <div class="brand">◈ MOTHERSHIP <span class="dim">// 通讯终端</span></div>
+        <div class="status">
+          <span id="connDot" class="dot off"></span><span id="connText">离线</span> ·
+          <span id="whoami" class="dim"></span>
+          <span id="gmBadge" class="badge hidden">GM</span> ·
+          <span id="roomName" class="dim"></span>
+        </div>
+        <div class="top-actions">
+          <button id="charBtn">角色卡</button>
+          <button id="helpBtn">指令</button>
+        </div>
+      </header>
+
+      <main id="log" class="log"></main>
+
+      <div class="quickbar">
+        <select id="advMode" title="骰池优势 / 劣势">
+          <option value="">无修饰</option>
+          <option value="adv">优势 Adv</option>
+          <option value="dis">劣势 Dis</option>
+        </select>
+        <button data-cmd="!d100">d100</button>
+        <button data-cmd="!d20">d20</button>
+        <button data-cmd="!check 55">检定</button>
+        <button data-cmd="!panic">Panic</button>
+        <button data-cmd="!stress">Stress</button>
+        <button id="exportBtn" title="导出本频道日志（GM 在「全部频道」视图下导出全部）">导出</button>
+      </div>
+
+      <form id="sendForm" class="sendbar">
+        <input id="msgInput" autocomplete="off" placeholder="输入消息，或 !roll 2d10+5 投骰…" />
+        <button type="submit">发送</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<div id="charModal" class="overlay hidden">
+  <div class="panel modal-card">
+    <div class="modal-head">
+      <div class="logo">角色卡档案库</div>
+      <button id="charClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="char-scope">当前频道：<span id="charScope">主频道</span></div>
+      <div id="charList" class="char-list"></div>
+      <div class="char-form-wrap">
+        <div class="sub">编辑 / 新建（以你的呼号存档）</div>
+        <form id="charForm" class="char-form">
+          <input type="hidden" id="cOwner" />
+          <div class="row"><label>姓名</label><input id="cName" maxlength="24" /></div>
+          <div class="row"><label>职业</label>
+            <select id="cCls">
+              <option value="">—</option>
+              <option>Teamster</option><option>Scientist</option>
+              <option>Android</option><option>Marine</option>
+              <option>机械师</option><option>科学家</option>
+              <option>仿生人</option><option>海军陆战队</option>
+            </select>
+          </div>
+          <div class="grid4">
+            <div><label>STR</label><input id="cStr" type="number" min="0" max="100" /></div>
+            <div><label>SPD</label><input id="cSpd" type="number" min="0" max="100" /></div>
+            <div><label>INT</label><input id="cInt" type="number" min="0" max="100" /></div>
+            <div><label>COM</label><input id="cCom" type="number" min="0" max="100" /></div>
+          </div>
+          <div class="grid4">
+            <div><label>SAN</label><input id="cSan" type="number" min="0" max="100" /></div>
+            <div><label>FEA</label><input id="cFea" type="number" min="0" max="100" /></div>
+            <div><label>BOD</label><input id="cBod" type="number" min="0" max="100" /></div>
+            <div><label>ARM</label><input id="cArm" type="number" min="0" max="100" /></div>
+          </div>
+          <div class="grid2">
+            <div><label>Stress</label><input id="cStress" type="number" min="0" max="99" /></div>
+            <div><label>Wounds</label><input id="cWounds" type="number" min="0" max="20" /></div>
+          </div>
+          <div class="row"><label>备注</label><textarea id="cNotes" maxlength="2000" rows="2"></textarea></div>
+          <div class="row"><label>装备/物品</label><textarea id="cItems" maxlength="2000" rows="4" placeholder="每行一项，例：&#10;脉冲步枪 x1&#10;急救包&#10;撬棍"></textarea></div>
+          <div class="row"><label>卡面图</label><input id="cImage" type="file" accept="image/*" /></div>
+          <div class="form-actions">
+            <button type="submit">保存我的卡</button>
+            <button type="button" id="charDelete" class="danger hidden">删除</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="roomModal" class="overlay hidden">
+  <div class="panel modal-card">
+    <div class="modal-head">
+      <div class="logo">频道管理 <span class="dim">// GM 专属</span></div>
+      <button id="roomClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="roomAdminList" class="room-admin-list"></div>
+      <div class="char-form-wrap">
+        <div class="sub" id="roomFormTitle">新建频道</div>
+        <form id="roomForm" class="char-form">
+          <input type="hidden" id="rEditId" />
+          <div class="row"><label>频道名</label><input id="rName" maxlength="30" placeholder="如：阿尔法小队" /></div>
+          <div class="row"><label>开放给</label><input id="rAllowed" placeholder="留空=所有人；多个用逗号分隔，如 艾达,鲍勃" /></div>
+          <div class="form-actions">
+            <button type="submit">保存</button>
+            <button type="button" id="roomCancel" class="danger hidden">取消编辑</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

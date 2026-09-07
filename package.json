@@ -1,0 +1,13 @@
+{
+  "name": "mothership-lan-chat",
+  "version": "1.0.0",
+  "description": "Mothership-flavored LAN chat server with dice rolling and character sheets",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "pkg": "^5.8.1"
+  }
+}
