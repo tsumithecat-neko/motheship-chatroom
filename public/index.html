@@ -1,143 +1,207 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html lang="zh-CN" data-page-node-id="mVbPpqIe4E8eo07R2FMUHx">
+<head data-page-node-id="Sa5HPcMQ61ALD7vPiU54Tb">
+<meta charset="UTF-8" data-page-node-id="zsgqsBDxstTjE5TNh3b9IO" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="IgocyqHUHz7empYvoFB2MQ" />
 <title>MOTHERSHIP // 通讯终端</title>
-<link rel="stylesheet" href="/style.css" />
+<link rel="stylesheet" href="/style.css" data-page-node-id="u32ate3qDvBIDH52NfPb5F" />
 </head>
-<body>
-<div class="scanlines"></div>
+<body data-page-node-id="B9kWbraT39lqYTmszzGy39">
+<div class="scanlines" data-page-node-id="xnoRpt3FTngzhuoO5199ZI"></div>
 
-<div id="login" class="overlay">
-  <div class="panel login-card">
-    <div class="logo">◈ MOTHERSHIP</div>
-    <div class="sub">局域网络通讯终端 · v2.0</div>
-    <input id="nameInput" maxlength="20" placeholder="输入你的呼号 / 船员代号" />
-    <input id="gmInput" maxlength="40" placeholder="GM 口令（可选，留空为普通船员）" />
-    <button id="connectBtn">接入频道</button>
-    <div class="hint">接入后其他人可在同网段用局域网地址加入</div>
+<div id="login" class="overlay" data-page-node-id="RS0NfuHRvCwB6nZACShjgC">
+  <div class="panel login-card" data-page-node-id="5ps7KdBhpnncl9SlITV0OZ">
+    <div class="logo" data-page-node-id="Sx5GTHmUj3qH1F7iFjfT46">◈ MOTHERSHIP</div>
+    <div class="sub" data-page-node-id="uFGrGlcIVdoV3n7BTN90hU">局域网络通讯终端 · v2.0</div>
+    <input id="nameInput" maxlength="20" placeholder="输入你的呼号 / 船员代号" data-page-node-id="mOE6hOjt89wU9EVGQgPHJu" />
+    <input id="gmInput" maxlength="40" placeholder="GM 口令（可选，留空为普通船员）" data-page-node-id="jIhnspPoWgOww0navUvpYk" />
+    <button id="connectBtn" data-page-node-id="RjLPKJ1btqo65CP8rY8yw7">接入频道</button>
+    <div class="hint" data-page-node-id="IGtnL3FbOyqnsrtGtfu95V">接入后其他人可在同网段用局域网地址加入</div>
   </div>
 </div>
 
-<div id="app" class="hidden">
-  <div class="layout">
-    <aside class="rooms">
-      <div class="rooms-head">频道</div>
-      <div id="roomList" class="room-list"></div>
-      <button id="roomManageBtn" class="room-manage hidden">⚙ 管理频道</button>
+<div id="app" class="hidden" data-page-node-id="nFveKdyoaRDHGBl5HaH5aL">
+  <div class="layout" data-page-node-id="J1b3iUfoncBdRJdFLy82qH">
+    <aside class="rooms" data-page-node-id="wGuEc5SwPWS7MCO1VaY2xr">
+      <div class="rooms-head" data-page-node-id="HoBiDDDZNqLxgqU4LL84lL">频道</div>
+      <div id="roomList" class="room-list" data-page-node-id="LbuYUKMSthijZx6sIIllgl"></div>
+      <button id="roomManageBtn" class="room-manage hidden" data-page-node-id="XLo46DrMfeLUDKRWQjyHOo">⚙ 管理频道</button>
+      <div class="madeby" data-page-node-id="madeby00">
+        <div class="mb-l1">created by</div>
+        <div class="mb-l2">tsumithecat</div>
+        <a class="mb-l3" href="https://github.com/tsumithecat-neko/motheship-chatroom" target="_blank" rel="noopener">github · tsumithecat-neko</a>
+        <div class="mb-l4">all rights reserved</div>
+      </div>
     </aside>
 
-    <section class="main-col">
-      <header class="topbar">
-        <div class="brand">◈ MOTHERSHIP <span class="dim">// 通讯终端</span></div>
-        <div class="status">
-          <span id="connDot" class="dot off"></span><span id="connText">离线</span> ·
-          <span id="whoami" class="dim"></span>
-          <span id="gmBadge" class="badge hidden">GM</span> ·
-          <span id="roomName" class="dim"></span>
+    <section class="main-col" data-page-node-id="n9fg2FpY4P3hQV1twl8OYj">
+      <header class="topbar" data-page-node-id="HElEXd4jap1UEjAZuR9VxK">
+        <div class="brand" data-page-node-id="DrCNhU1HA12cn7nWf18ZCM">◈ MOTHERSHIP <span class="dim" data-page-node-id="VP2LKpLx3zDhS5nQiXXFPV">// 通讯终端</span></div>
+        <div class="readouts" data-page-node-id="roWrap000">
+          <span class="ro ro-clock" data-page-node-id="roClock00"><b id="roClock" data-page-node-id="roClock0b">--:--:--</b></span>
+          <span class="ro" data-page-node-id="roLat0000"><span class="rk" data-page-node-id="roLat00k">LINK</span><b id="roLat" data-page-node-id="roLat00v">--</b></span>
+          <span class="ro" data-page-node-id="roUp00000"><span class="rk" data-page-node-id="roUp0000k">UPTIME</span><b id="roUp" data-page-node-id="roUp0000v">--</b></span>
+          <span class="ro" data-page-node-id="roCr00000"><span class="rk" data-page-node-id="roCr0000k">CREW</span><b id="roCrew" data-page-node-id="roCr0000v">-</b></span>
+          <span class="ro" data-page-node-id="roMsg0000"><span class="rk" data-page-node-id="roMsg000k">MSG·DAY</span><b id="roMsg" data-page-node-id="roMsg000v">-</b></span>
         </div>
-        <div class="top-actions">
-          <button id="mapBtn">地图</button>
-          <button id="charBtn">角色卡</button>
-          <button id="helpBtn">指令</button>
-          <button id="logoutBtn" title="退出登录">登出</button>
+        <div class="status" data-page-node-id="B3gDbBivuP1FptJQE14M07">
+          <span id="connDot" class="dot off" data-page-node-id="EBWSTsWKjO8eenVXTIwbpg"></span><span id="connText" data-page-node-id="P676BTtGZpoE5CI4vbqQkE">离线</span> ·
+          <span id="whoami" class="dim" data-page-node-id="SfwbKIi0Of7HxCOBD2jErB"></span>
+          <span id="gmBadge" class="badge hidden" data-page-node-id="OPTEe50nPyEwZVzcu2EvCA">GM</span> ·
+          <span id="roomName" class="dim" data-page-node-id="pcdvBNhx4ltCT6osD0QQ64"></span>
+        </div>
+        <div class="top-actions" data-page-node-id="z5LI8hy8CjkxUz16Q6BXXW">
+          <button id="mapBtn" data-page-node-id="BpGdY3RTSzl5J0hnCZCLD2">地图</button>
+          <button id="charBtn" data-page-node-id="RhzZKXuOevZBfAQgWAGExr">角色卡</button>
+          <button id="helpBtn" data-page-node-id="S4ybY4vZ72DVhxEnXW9sqQ">指令</button>
+          <button id="settingsBtn" title="设置：改名 / 清除本端日志 / 导出日志" data-page-node-id="setBtn00">设置</button>
+          <button id="logoutBtn" title="退出登录" data-page-node-id="PJj4gNSWsnuJS0KOfsB0Hf">登出</button>
         </div>
       </header>
 
-      <main id="log" class="log"></main>
+      <main id="log" class="log" data-page-node-id="qs090UXUdu9nocLzAFBOi3"></main>
 
-      <div class="quickbar">
-        <select id="advMode" title="骰池优势 / 劣势">
-          <option value="">无修饰</option>
-          <option value="adv">优势 Adv</option>
-          <option value="dis">劣势 Dis</option>
+      <div class="quickbar" data-page-node-id="W7o0dFpbbwAwsHqSmBcbAi">
+        <select id="advMode" title="骰池优势 / 劣势" data-page-node-id="qEO2pMcYuf09xtSbphXjxb">
+          <option value="" data-page-node-id="BdzHsIdIzIBqvzhvROMiSX">无修饰</option>
+          <option value="adv" data-page-node-id="8Xx8QsFd93rlBmhCKnTZ0j">优势 Adv</option>
+          <option value="dis" data-page-node-id="iWFHvfspbTyNtCgCFsT903">劣势 Dis</option>
         </select>
-        <button data-cmd="!d100">d100</button>
-        <button data-cmd="!d20">d20</button>
-        <button data-cmd="!check 55">检定</button>
-        <button data-cmd="!panic">Panic</button>
-        <button data-cmd="!stress">Stress</button>
-        <button id="exportBtn" title="导出本频道日志（GM 在「全部频道」视图下导出全部）">导出</button>
+        <button data-cmd="!d100" data-page-node-id="dF4hBYqTccXMgkNd7O19Qo">d100</button>
+        <button data-cmd="!d20" data-page-node-id="wlpbtgUbdJCdOL3YVQo820">d20</button>
+        <button id="checkBtn" data-page-node-id="HWn5cJQUsDDfLHHZUZ0UPU">检定</button>
+        <button data-cmd="!panic" data-page-node-id="TmRqkhy31w5BneHmsyIfUD">Panic</button>
+        <button data-cmd="!stress" data-page-node-id="46cxuWmiRGnbuV3uTMuZ2S">Stress</button>
+        <button id="exportBtn" title="导出本频道日志（GM 在「全部频道」视图下导出全部）" data-page-node-id="hYxiv1adwBCyxUlOwf1dkH">导出</button>
       </div>
 
-      <form id="sendForm" class="sendbar">
-        <input id="msgInput" autocomplete="off" placeholder="输入消息，或 !roll 2d10+5 投骰…" />
-        <button type="submit">发送</button>
+      <div class="sendbar-mode" id="sendbarMode" data-page-node-id="M0m0dE1xAAQ1l2M3o4D5E6">
+        <span class="sbm-label">以</span>
+        <div class="sbm-seg" id="sbmSeg">
+          <button type="button" data-as="player" class="active" data-page-node-id="M1m1dE2xAAQ1l2M3o4D5E6">玩家 <span class="sbm-who" id="sbmWhoPlayer"></span></button>
+          <button type="button" data-as="character" data-page-node-id="M2m2dE3xAAQ1l2M3o4D5E6">角色 <span class="sbm-who" id="sbmWhoChar"></span></button>
+          <button type="button" data-as="scene" data-page-node-id="M3m3dE4xAAQ1l2M3o4D5E6">场景</button>
+        </div>
+      </div>
+
+      <form id="sendForm" class="sendbar" data-page-node-id="N9aiNFe0XetY2B1eWNwo6f">
+        <input id="msgInput" autocomplete="off" placeholder="输入消息，或 !roll 2d10+5 投骰…" data-page-node-id="2LbPsvMwD9BltPRbQrieFU" />
+        <button type="submit" data-page-node-id="ZOrByFDdOB1YeIiKOpM4AV">发送</button>
       </form>
     </section>
+
+    <!-- 右侧常驻栏：上=甲板图(玩家视角)，下=角色信息 -->
+    <aside class="sidepanel" id="sidePanel">
+      <div class="side-rail" id="sideRail" title="展开侧栏">
+        <span class="rail-mark">◈</span><span class="rail-txt">甲板 / 角色</span>
+      </div>
+      <div class="side-inner">
+        <section class="side-sec side-sec-map">
+          <div class="side-sec-h">
+            <span class="side-sec-t">甲板图 · 玩家视角</span>
+            <button class="mini" id="sideCollapse" title="折叠侧栏">»</button>
+          </div>
+          <div class="side-map-wrap" id="miniMapWrap">
+            <canvas id="miniMapCanvas"></canvas>
+            <div class="side-map-radaroff" id="sideMapRadarOff">
+              <div class="ro-tag">⛔ PLAYER RADAR</div>
+              <div class="ro-h">SIGNAL LOST</div>
+              <div class="ro-sub">玩家雷达已关闭 · 等待 GM 重启扫描</div>
+            </div>
+            <!-- 雷达开关：电视故障覆盖层（开/关雷达时由 GM 触发，限定在小地图容器内） -->
+            <div id="radarFx" class="radar-fx hidden">
+              <div class="rfx-bg"></div>
+              <div class="rfx-shake">
+                <div class="rfx-scanlines"></div>
+                <div class="rfx-sweep"></div>
+                <div class="rfx-flash"></div>
+                <div class="rfx-shift-c"></div>
+                <div class="rfx-shift-m"></div>
+                <div class="rfx-shift-b"></div>
+                <div class="rfx-noise"></div>
+                <div class="rfx-band-t"></div>
+                <div class="rfx-band-b"></div>
+                <div class="rfx-blackout"></div>
+                <div class="rfx-line rfx-line-1"></div>
+                <div class="rfx-line rfx-line-2"></div>
+                <div class="rfx-line rfx-line-3"></div>
+                <div class="rfx-text" id="radarFxText">SCANNING…</div>
+                <div class="rfx-sub" id="radarFxSub">CH 04 · DECODE 0%</div>
+                <div class="rfx-progress"><i id="radarFxProg"></i></div>
+              </div>
+              <div class="rfx-corner rfx-c1">◈ MOTHERSHIP</div>
+              <div class="rfx-corner rfx-c2" id="radarFxTag">SCAN · INIT</div>
+              <div class="rfx-corner rfx-c3" id="radarFxTime">T+ 00:00:00</div>
+              <div class="rfx-corner rfx-c4">SRC · GM-LINK</div>
+            </div>
+          </div>
+          <div class="side-map-foot" id="miniMapInfo">等待地图数据…</div>
+          <div class="side-radar-bar gm-only" id="sideRadarBar">
+            <span class="sr-label">雷达</span>
+            <button class="mini" id="radarOnBtn" data-v="1">开启</button>
+            <button class="mini" id="radarOffBtn" data-v="0">关闭</button>
+            <span class="sr-divider"></span>
+            <button class="entry-btn" id="entryToggleBtn" title="玩家端小地图强制显示入口房间">ENTRY</button>
+            <span class="sr-state" id="radarState">—</span>
+          </div>
+        </section>
+        <section class="side-sec side-sec-char">
+          <div class="side-sec-h">
+            <span class="side-sec-t">角色信息</span>
+            <button class="mini" id="sideCharEdit" title="打开完整角色卡编辑">编辑</button>
+          </div>
+          <div class="side-char" id="sideChar"><div class="side-empty">尚未建立角色卡</div></div>
+        </section>
+      </div>
+    </aside>
   </div>
 </div>
 
-<div id="charModal" class="overlay hidden">
-  <div class="panel modal-card">
-    <div class="modal-head">
-      <div class="logo">角色卡档案库</div>
-      <button id="charClose">✕</button>
+<div id="charModal" class="overlay hidden" data-page-node-id="IN6OzSWIAhZDh7vkvKxX4K">
+  <div class="panel modal-card" data-page-node-id="5vmJF3oRCPgNs2IAUaQDav">
+    <div class="modal-head" data-page-node-id="hyyC0i5spaX5srVAyjU864">
+      <div class="logo" data-page-node-id="R2ROg7qqNgZap9eIanFV1w">角色卡档案库</div>
+      <button id="charClose" data-page-node-id="HvMRdRbMwbifHQqkkmLCkh">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="char-scope">当前频道：<span id="charScope">主频道</span></div>
-      <div id="charList" class="char-list"></div>
-      <div class="char-form-wrap">
-        <div class="sub">编辑 / 新建（以你的呼号存档）</div>
-        <form id="charForm" class="char-form">
-          <input type="hidden" id="cOwner" />
-          <div class="row"><label>姓名</label><input id="cName" maxlength="24" /></div>
-          <div class="row"><label>职业</label>
-            <select id="cCls">
-              <option value="">—</option>
-              <option>Teamster</option><option>Scientist</option>
-              <option>Android</option><option>Marine</option>
-              <option>机械师</option><option>科学家</option>
-              <option>仿生人</option><option>海军陆战队</option>
+    <div class="modal-body" data-page-node-id="nQ9H9ttOIo0b6UKY6JjeCf">
+      <div class="char-scope" data-page-node-id="qSZ8yk4W2S2yOYBb136P1c">当前频道：<span id="charScope" data-page-node-id="nKFhnRS9mUJsfhVhauXjNr">主频道</span></div>
+      <div id="charList" class="char-list" data-page-node-id="mTxtypySu3iSpeBwEiKL1A"></div>
+      <div class="char-form-wrap" data-page-node-id="cG0yLBCVSQ8fG2XV7ANBUA">
+        <div class="sub" data-page-node-id="3Wdh1HDVCFx630R05PaPKu">编辑 / 新建（以你的呼号存档）</div>
+        <form id="charForm" class="char-form" data-page-node-id="T9Q6CBT6IWBcaK9m1f7Fg5">
+          <input type="hidden" id="cOwner" data-page-node-id="72qycFvIh16Rdbcyd7DUMm" />
+          <div class="row" data-page-node-id="iIVouG3GcoqxuyegZuTdPw"><label data-page-node-id="pFaIVkfEMT3yoSPZQv6Dg8">姓名</label><input id="cName" maxlength="24" data-page-node-id="HO8OMB9zdTbd5dDB5wuC6V" /></div>
+          <div class="row" data-page-node-id="0oLC4JXqD7QTmwVTpBVmqw"><label data-page-node-id="ioPYN1pnRbuAX8MKDy8xCE">职业</label>
+            <select id="cCls" data-page-node-id="K48doH7sBHNy0L6zy08zHi">
+              <option value="" data-page-node-id="tj8fO8mvWRqLIOu1wfKNNw">—</option>
+              <option data-page-node-id="wuLRUzp9JeZqC3E5dV6hnq">Teamster</option><option data-page-node-id="aoRpHcEd31d4NWPWdQRMjW">Scientist</option>
+              <option data-page-node-id="zMXjArzymHl5qMYQGTD3FD">Android</option><option data-page-node-id="5ykqWfpxTPbJ9zFm5Mkfxc">Marine</option>
+              <option data-page-node-id="yNO6P5oR0cJRRDF7etl5Tp">机械师</option><option data-page-node-id="dFr7xCfC4T8wxmTG1blwF9">科学家</option>
+              <option data-page-node-id="AF64CpyGA5GxyBlDzCaCOQ">仿生人</option><option data-page-node-id="AdCXgKHb9PkTjovfPbxSA1">海军陆战队</option>
             </select>
           </div>
-          <div class="grid4">
-            <div><label>STR</label><input id="cStr" type="number" min="0" max="100" /></div>
-            <div><label>SPD</label><input id="cSpd" type="number" min="0" max="100" /></div>
-            <div><label>INT</label><input id="cInt" type="number" min="0" max="100" /></div>
-            <div><label>COM</label><input id="cCom" type="number" min="0" max="100" /></div>
+          <div class="grid4" data-page-node-id="kuw8Ty9kjQpBidbverDUYF">
+            <div data-page-node-id="jHUbYJtoNG8Vj6ckY0yuIk"><label data-page-node-id="zb3Vkr2p7NB1xuKsh5h90t">STR</label><input id="cStr" type="number" min="0" max="100" data-page-node-id="0RjfkMAk6oFJRT4OJUR7yn" /></div>
+            <div data-page-node-id="SaRsVar90jiLLXcik3WFMc"><label data-page-node-id="rQDH2XTZmQLH8m6nSJhLzY">SPD</label><input id="cSpd" type="number" min="0" max="100" data-page-node-id="REVFCltxrFPoBWDZq7DEfb" /></div>
+            <div data-page-node-id="PQ3NiZEJ7P4g6xJjQoiQzu"><label data-page-node-id="YU0vohjxb7ZDiLuTZV9K8a">INT</label><input id="cInt" type="number" min="0" max="100" data-page-node-id="0dpRfpwpTqTEMZh1rEXx2F" /></div>
+            <div data-page-node-id="HIVHBhbcSnD1YReorKiZly"><label data-page-node-id="Ab1zACac1g0NNLBHG5OkWg">COM</label><input id="cCom" type="number" min="0" max="100" data-page-node-id="FuG7DnxaadRAPz4P7TA0QZ" /></div>
           </div>
-          <div class="grid4">
-            <div><label>SAN</label><input id="cSan" type="number" min="0" max="100" /></div>
-            <div><label>FEA</label><input id="cFea" type="number" min="0" max="100" /></div>
-            <div><label>BOD</label><input id="cBod" type="number" min="0" max="100" /></div>
-            <div><label>ARM</label><input id="cArm" type="number" min="0" max="100" /></div>
+          <div class="grid4" data-page-node-id="3sN3FseEWCHcg1TDBwxJ1d">
+            <div data-page-node-id="aH2ujQtogluh1TLyHyoFcV"><label data-page-node-id="GhFTPVX7iMn1BBIqJQU4Dx">SAN</label><input id="cSan" type="number" min="0" max="100" data-page-node-id="DBMOeJGQDSXKyWSXVEPlTX" /></div>
+            <div data-page-node-id="5QUOnjZBXKIaWHVxB53tzw"><label data-page-node-id="Yg3Qj9gXEYuyxohq0k24Dn">FEA</label><input id="cFea" type="number" min="0" max="100" data-page-node-id="JHxFbA7LsxYhLqvN3oz8Ff" /></div>
+            <div data-page-node-id="BMe5cKC7CpO4QEsnrQAgKd"><label data-page-node-id="XjbQHZAqxQt3OQUHNDTmiz">BOD</label><input id="cBod" type="number" min="0" max="100" data-page-node-id="81pkOHJFemdsdzlyHBmcHg" /></div>
+            <div data-page-node-id="iRpuyxtgo1U7WdOYPfHX4h"><label data-page-node-id="G4QuriwN7exTGzj4l7781n">ARM</label><input id="cArm" type="number" min="0" max="100" data-page-node-id="1dgWF6cZRqJlAeNv4YpFr3" /></div>
           </div>
-          <div class="grid2">
-            <div><label>Stress</label><input id="cStress" type="number" min="0" max="99" /></div>
-            <div><label>Wounds</label><input id="cWounds" type="number" min="0" max="20" /></div>
+          <div class="grid2" data-page-node-id="oHPK4S7kfvjd7qfwJXCN0v">
+            <div data-page-node-id="sTPZCGqlUQQBMNYNgKIpPC"><label data-page-node-id="wdKBGr8CkXv4aaRDcjYceL">Stress</label><input id="cStress" type="number" min="0" max="99" data-page-node-id="TfPEyCV1rVGGEezfRFQ1m5" /></div>
+            <div data-page-node-id="mJ0TFozoyqTwxdQsPYxUtR"><label data-page-node-id="6o245TnlVblvYvUdRCvGjU">Wounds</label><input id="cWounds" type="number" min="0" max="20" data-page-node-id="JzqAqbF01K2uX61luF63ro" /></div>
           </div>
-          <div class="row"><label>备注</label><textarea id="cNotes" maxlength="2000" rows="2"></textarea></div>
-          <div class="row"><label>装备/物品</label><textarea id="cItems" maxlength="2000" rows="4" placeholder="每行一项，例：&#10;脉冲步枪 x1&#10;急救包&#10;撬棍"></textarea></div>
-          <div class="row"><label>卡面图</label><input id="cImage" type="file" accept="image/*" /></div>
-          <div class="form-actions">
-            <button type="submit">保存我的卡</button>
-            <button type="button" id="charDelete" class="danger hidden">删除</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="roomModal" class="overlay hidden">
-  <div class="panel modal-card">
-    <div class="modal-head">
-      <div class="logo">频道管理 <span class="dim">// GM 专属</span></div>
-      <button id="roomClose">✕</button>
-    </div>
-    <div class="modal-body">
-      <div id="roomAdminList" class="room-admin-list"></div>
-      <div class="char-form-wrap">
-        <div class="sub" id="roomFormTitle">新建频道</div>
-        <form id="roomForm" class="char-form">
-          <input type="hidden" id="rEditId" />
-          <div class="row"><label>频道名</label><input id="rName" maxlength="30" placeholder="如：阿尔法小队" /></div>
-          <div class="row"><label>开放给</label><input id="rAllowed" placeholder="留空=所有人；多个用逗号分隔，如 艾达,鲍勃" /></div>
-          <div class="form-actions">
-            <button type="submit">保存</button>
-            <button type="button" id="roomCancel" class="danger hidden">取消编辑</button>
+          <div class="row" data-page-node-id="W8YSfccBgj3DH4GsVOHrJW"><label data-page-node-id="Dkk2wIYtUXNbY9Z7SQiHLe">备注</label><textarea id="cNotes" maxlength="2000" rows="2"></textarea></div>
+          <div class="row" data-page-node-id="eKP89VTRfE6OXDCNlodKDe"><label data-page-node-id="GHkJOYijM3QunTJLD4hkkl">装备/物品</label><textarea id="cItems" maxlength="2000" rows="4" placeholder="每行一项，例：&#10;脉冲步枪 x1&#10;急救包&#10;撬棍"></textarea></div>
+          <div class="row" data-page-node-id="ud2d4HHC4J5sztzTe2CM8D"><label data-page-node-id="k7ptLHPiVd10nMzpGnrdZf">卡面图</label><input id="cImage" type="file" accept="image/*" data-page-node-id="fMaP8fUkUHe0x8ihN5IVyK" /></div>
+          <div class="form-actions" data-page-node-id="QlydU8LZCpDEqCInd7lOC7">
+            <button type="submit" data-page-node-id="HmpeM0ZIEzSQXVTCqrzUCE">保存我的卡</button>
+            <button type="button" id="charDelete" class="danger hidden" data-page-node-id="DPZ7em7Cmo0rgpPgHgHo1g">删除</button>
           </div>
         </form>
       </div>
@@ -145,146 +209,219 @@
   </div>
 </div>
 
-<div id="mapModal" class="overlay hidden">
-  <div class="panel map-panel">
-    <div class="modal-head">
-      <div class="logo">战术地图 <span class="dim">// <span id="mapScope">主频道</span></span></div>
-      <div class="map-head-actions">
-        <span class="map-mode gm-only" id="mapModeWrap">
-          <button id="mapModeEdit" class="mini mode on">编辑</button>
-          <button id="mapModeShow" class="mini mode">显示</button>
-        </span>
-        <span class="map-pub gm-only" id="mapPubWrap">
-          <button id="mapPublishFloor" class="mini amber" title="把当前楼层的房间全部对玩家公开">公开本层</button>
-          <button id="mapPublishAll" class="mini amber" title="把全部楼层的房间全部对玩家公开">公开全部</button>
-        </span>
-        <button id="mapHelp" class="mini">?</button>
-        <button id="mapUndo" class="mini gm-only">撤销</button>
-        <button id="mapRedo" class="mini gm-only">重做</button>
-        <button id="mapPng" class="mini">PNG</button>
-        <button id="mapDel" class="mini danger hidden">删除</button>
-        <button id="mapClose">✕</button>
+<div id="roomModal" class="overlay hidden" data-page-node-id="vDiXHLEPjwsSQ8llRzegnI">
+  <div class="panel modal-card" data-page-node-id="918IqrljvdFdhycidwrEUz">
+    <div class="modal-head" data-page-node-id="QeT5ge0NuLS6JxaizuBYmS">
+      <div class="logo" data-page-node-id="7Scf5M9679i6EdcbWWUnv9">频道管理 <span class="dim" data-page-node-id="9hHub6zoAPiWy19BVo1a1g">// GM 专属</span></div>
+      <button id="roomClose" data-page-node-id="TQCd9qVgCDl80eJIl4pCVj">✕</button>
+    </div>
+    <div class="modal-body" data-page-node-id="05QDcx8XCKofTUTl39MDhE">
+      <div id="roomAdminList" class="room-admin-list" data-page-node-id="8aNHL1snGEv2OAzppO7AM8"></div>
+      <div class="char-form-wrap" data-page-node-id="xLtEAhGmCRB1gKfo5bxX6F">
+        <div class="sub" id="roomFormTitle" data-page-node-id="QTL1lpyr6bBnpw1R9pVGsE">新建频道</div>
+        <form id="roomForm" class="char-form" data-page-node-id="CH4F9VxZF5xXgKA7vuB3ni">
+          <input type="hidden" id="rEditId" data-page-node-id="ScXc930uCyUjbpafSuvYjj" />
+          <div class="row" data-page-node-id="nr3be4PumrdoKyFKbvr3yz"><label data-page-node-id="jTkxv8lRCYp3j0mAHXLrqz">频道名</label><input id="rName" maxlength="30" placeholder="如：阿尔法小队" data-page-node-id="YuVD5mkslQlmdTgRNgZyDU" /></div>
+          <div class="row" data-page-node-id="dIF2PV8EKGmDDpOFSjuBPL"><label data-page-node-id="04uVxIy83FSIflSdEYpmCV">开放给</label><input id="rAllowed" placeholder="留空=所有人；多个用逗号分隔，如 艾达,鲍勃" data-page-node-id="KbtPMvp26XREkNahizZA9S" /></div>
+          <div class="form-actions" data-page-node-id="3mMoUaQdJkeNDNIvP3kRoA">
+            <button type="submit" data-page-node-id="V67AJDjE1ny6skhhQcjZHV">保存</button>
+            <button type="button" id="roomCancel" class="danger hidden" data-page-node-id="nuRzZHW6OWeSzhvfED981x">取消编辑</button>
+          </div>
+        </form>
       </div>
     </div>
-    <div class="map-body">
-      <div class="map-side">
-        <div class="map-sec gm-only" data-edit="1">
-          <div class="map-sec-t">绘制房间</div>
-          <div class="map-btns">
-            <button class="mini tool" data-tool="rect">矩形</button>
-            <button class="mini tool" data-tool="poly">多边形</button>
+  </div>
+</div>
+
+<div id="mapModal" class="overlay hidden" data-page-node-id="Rjj6rHkL4p4t6laE1TCbM1">
+  <div class="panel map-panel" data-page-node-id="W3SZYF37Szr8LnqrhDBl4g">
+    <div class="modal-head" data-page-node-id="NM7ifH7jNAW0k68TWd6r1e">
+      <div class="logo" data-page-node-id="W4KlOVnm7fWyMeZNvKaPZ3">战术地图 <span class="dim" data-page-node-id="VpMAKeq3Xa0b9fvZ5ViAgU">// <span id="mapScope" data-page-node-id="LPRVVS4YMRVeMSVsXaYkWi">主频道</span></span></div>
+      <div class="map-head-actions" data-page-node-id="VCe03LCpvKp8iDWh4Zkw9A">
+        <span class="map-mode gm-only" id="mapModeWrap" data-page-node-id="Z4FwkoaWNbLjMhiuYVds2E">
+          <button id="mapModeEdit" class="mini mode on" data-page-node-id="Pn1plulQg6EP4pmoHIyhUf">编辑</button>
+          <button id="mapModeShow" class="mini mode" data-page-node-id="NNBtbjeqaUufy3H02akZNi">显示</button>
+        </span>
+        <span class="map-pub gm-only" id="mapPubWrap" data-page-node-id="hGqtD3XImEuP6Awyp0QRi3">
+          <button id="mapPublishFloor" class="mini amber" title="把当前楼层的房间全部对玩家公开" data-page-node-id="FWQBrMqteodE3G9nzXpPqX">公开本层</button>
+          <button id="mapPublishAll" class="mini amber" title="把全部楼层的房间全部对玩家公开" data-page-node-id="VMSXORyRfSzeAHmlwFwBn1">公开全部</button>
+        </span>
+        <button id="mapHelp" class="mini" data-page-node-id="A0OBZoxeYOBZo9wN95V01z">?</button>
+        <button id="mapUndo" class="mini gm-only" data-page-node-id="YIH8dnKDJedj9gKSXPPtFn">撤销</button>
+        <button id="mapRedo" class="mini gm-only" data-page-node-id="zfAlhveJKlN6LiPXreqxa1">重做</button>
+        <button id="mapPng" class="mini" data-page-node-id="EqqBCa1v1S3XGPRNsG4HrD">PNG</button>
+        <button id="mapExport" class="mini" data-page-node-id="zFUnXd7nynCvQJI9DUSrCA">导出</button>
+        <button id="mapImport" class="mini" data-page-node-id="WZ71DzM918GL5CqEhyPFFp">导入</button>
+        <button id="mapDel" class="mini danger hidden" data-page-node-id="V8b3JWuahIaebkglEqoMHj">删除</button>
+        <input id="mapFileInput" type="file" accept="application/json,.json" style="display:none" data-page-node-id="JeeGMCtwl77kQ4tuM6IIHW" />
+        <button id="mapClose" data-page-node-id="SDZEw76OP0pXA2gKXeSEF0">✕</button>
+      </div>
+    </div>
+    <div class="map-body" data-page-node-id="SkUSYIRNnB6rpbwNmARV6I">
+      <div class="map-side" data-page-node-id="aW0yNqcMuK65wUtZHVDkLH">
+        <div class="map-sec gm-only" data-edit="1" data-page-node-id="s2c5ucwp2PburqhD93OTVV">
+          <div class="map-sec-t" data-page-node-id="KblWAa4jkaBAUNrC2auFUt">绘制房间</div>
+          <div class="map-btns" data-page-node-id="XGxjAE3XuLQi5oID37eP4E">
+            <button class="mini tool" data-tool="rect" data-page-node-id="0tJ71sAYbimFuVyRoPPFIi">矩形</button>
+            <button class="mini tool" data-tool="poly" data-page-node-id="FTSDoX2zf2OEJkWntO5UcA">多边形</button>
           </div>
-          <div class="map-hint">矩形拖出；多边形逐点点击(点回首点闭合)。形状自选后再选类型</div>
+          <div class="map-hint" data-page-node-id="upkQA4ZQ8l3gLnUGJ1IkBa">矩形拖出；多边形逐点点击(点回首点闭合)。形状自选后再选类型</div>
         </div>
-        <div class="map-sec gm-only" data-edit="1">
-          <div class="map-sec-t">走廊通道</div>
-          <div class="map-btns">
-            <button class="mini tool" data-tool="passage">通道</button>
+        <div class="map-sec gm-only" data-edit="1" data-page-node-id="RGHaYRDcvVO4CDPJGhKi8a">
+          <div class="map-sec-t" data-page-node-id="AgLRhzmwTmDepPGymj25yR">走廊通道</div>
+          <div class="map-btns" data-page-node-id="DxajSfNTQPZqJ6kSmAG9wX">
+            <button class="mini tool" data-tool="passage" data-page-node-id="RSk75ykDWBIIG12MAvCDXH">通道</button>
           </div>
-          <div class="map-hint">拖出走廊，伸到房间/通道边 1 格内即互通</div>
+          <div class="map-hint" data-page-node-id="Ka8yAfOtwON3gYCY7T7tQn">拖出走廊，伸到房间/通道边 1 格内即互通</div>
         </div>
-        <div class="map-sec gm-only" data-edit="1">
-          <div class="map-sec-t">门 / 梯</div>
-          <div class="map-btns">
-            <button class="mini tool" data-tool="door">门 / 梯</button>
+        <div class="map-sec gm-only" data-edit="1" data-page-node-id="63cDiYRbo19r0HD9r7F00P">
+          <div class="map-sec-t" data-page-node-id="qKl9zkYFwTqSLWQ0xh7tMM">门 / 梯</div>
+          <div class="map-btns" data-page-node-id="Lv6zpUftKWQ7WFtFLCFDTi">
+            <button class="mini tool" data-tool="door" data-page-node-id="fraA7ijWkc9qFRXoRQvmDA">门 / 梯</button>
           </div>
-          <div class="map-hint">点两个相邻对象放门；跨层自动成梯；门可选后锁</div>
+          <div class="map-hint" data-page-node-id="rNXMC2f1izgMOuOmO484Ve">点两个相邻对象放门；跨层自动成梯；门可选后锁</div>
         </div>
-        <div class="map-sec gm-only">
-          <div class="map-sec-t">对选中元素</div>
-          <div class="map-btns">
-            <button class="mini" id="mapEntryBtn">设为入口</button>
-            <button class="mini" id="mapExploreBtn">揭晓/隐藏</button>
-            <button class="mini" id="mapOpenBtn">开放/关闭</button>
-            <button class="mini hidden" id="mapLockBtn">锁门</button>
+        <div class="map-sec gm-only" data-page-node-id="2Sluk5NqsU9R2hBT1HhhqU">
+          <div class="map-sec-t" data-page-node-id="KmUIxPc0f696QWM77QF9uq">对选中元素</div>
+          <div class="map-btns" data-page-node-id="3SZoQ7Wgrp7m90JuHB8E42">
+            <button class="mini" id="mapExploreBtn" data-page-node-id="NbM35N64BOzhMbeyQ7weWr">揭晓/隐藏</button>
+            <button class="mini" id="mapOpenBtn" data-page-node-id="WwqnBBEsBl9howr38HgE3Y">开放/关闭</button>
+            <button class="mini hidden" id="mapLockBtn" disabled data-page-node-id="w77RCUIJp6DkO36jVjTU8O">锁门</button>
           </div>
-          <div class="map-hint">GM 在编辑或显示模式都可点选房间；「开放/关闭」决定玩家能否进入该房间</div>
+          <div class="map-hint" data-page-node-id="MM2shlUG4cNWHwC3YFqZzA">GM 在编辑或显示模式都可点选房间；「开放/关闭」决定玩家能否进入该房间</div>
         </div>
-        <div class="map-sec gm-only" data-edit="1">
-          <div class="map-sec-t">工具</div>
-          <div class="map-btns">
-            <button class="mini tool" data-tool="select">选择</button>
+        <div class="map-sec gm-only" data-edit="1" data-page-node-id="20kOeX4BS61A25FTAqpRFG">
+          <div class="map-sec-t" data-page-node-id="rCcHrUn0nZZcYLu1ptn0rU">工具</div>
+          <div class="map-btns" data-page-node-id="F5lB2zHhB7OeVagbsvRMDf">
+            <button class="mini tool" data-tool="select" data-page-node-id="hZifyeEbSbFtf1zQBU1RRD">选择</button>
           </div>
-          <div class="map-hint">门/房间/通道可选中 · 右键点部件弹出删除</div>
+          <div class="map-hint" data-page-node-id="4SqM1olTtANjHjP7izFwPN">门/房间/通道可选中 · 右键点部件弹出删除</div>
         </div>
-        <div class="map-sec">
-          <div class="map-sec-t">视图</div>
-          <div class="map-btns">
-            <button class="mini" id="mapZoomOut">－</button>
-            <button class="mini" id="mapZoomIn">＋</button>
-            <button class="mini" id="mapFit">适应</button>
+        <div class="map-sec" data-page-node-id="0fIgk4PAimnvHNX219bJjF">
+          <div class="map-sec-t" data-page-node-id="K5c8VeqbOlNJ5GCGi6aaM9">视图</div>
+          <div class="map-btns" data-page-node-id="5l8TEwr3Hjl0R2MizHAX0V">
+            <button class="mini" id="mapZoomOut" data-page-node-id="rN1zLBsN3ft1HFvyJM0Ar7">－</button>
+            <button class="mini" id="mapZoomIn" data-page-node-id="Ajk7qVJzKnGObQ0ljadStH">＋</button>
+            <button class="mini" id="mapFit" data-page-node-id="9Jh6KzEwiDk4HKGsdAMHsF">适应</button>
           </div>
-          <div class="map-hint" id="mapViewHint">滚轮缩放 · 拖拽平移</div>
+          <div class="map-hint" id="mapViewHint" data-page-node-id="DFGpDaODZvkYsAsEE5A2YL">滚轮缩放 · 拖拽平移</div>
         </div>
-        <div class="map-sec gm-only" id="roomListSec">
-          <div class="map-sec-t">房间列表 <span class="dim" id="roomListCount"></span></div>
-          <div class="map-roomlist" id="mapRoomList"></div>
+        <div class="map-sec gm-only" id="roomListSec" data-page-node-id="c14c9xZ2sXUwssZGJlzImD">
+          <div class="map-sec-t" data-page-node-id="zx0Eio9AngNSogiurROyD7">房间列表 <span class="dim" id="roomListCount" data-page-node-id="KkHipRpqy6tqTZOvHvD932"></span></div>
+          <div class="map-roomlist" id="mapRoomList" data-page-node-id="TNzHXNhfeahlz75IP8BD00"></div>
         </div>
       </div>
-      <div class="map-main">
-        <div class="map-floors gm-only" id="mapFloors"></div>
-        <div class="map-tipbar" id="mapTip"></div>
-        <div class="map-canvas-wrap" id="mapWrap"><canvas id="mapCanvas"></canvas><div id="mapAim" class="map-aim"><span class="aim-dot"></span><span class="aim-coord"></span></div></div>
-        <div class="map-legend" id="mapLegend"></div>
+      <div class="map-main" data-page-node-id="4QljifBcZREg4qDdCLDEbU">
+        <div class="map-floors gm-only" id="mapFloors" data-page-node-id="LFMFe5wCiUwWR7Wpm7tBqJ"></div>
+        <div class="map-tipbar" id="mapTip" data-page-node-id="AUqUOXZu0WJBNepMxJN4s7"></div>
+        <div class="map-canvas-wrap" id="mapWrap" data-page-node-id="orPFbxllsgeZfylWYuvU2R"><canvas id="mapCanvas" data-page-node-id="CfzFFBUKQmD1qWtnvCEQ09"></canvas><div id="mapAim" class="map-aim" data-page-node-id="COhWCK2d3j65w9UdwrX5Hy"><span class="aim-dot" data-page-node-id="4BT8iqdso6Sx2F5UCEbHmF"></span><span class="aim-coord" data-page-node-id="S1kOvUMqrqUAoTYDvcc0Qm"></span></div></div>
+        <div class="map-legend" id="mapLegend" data-page-node-id="6Fb4BuHf37SA20NRyQH5pD"></div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- 地图帮助（页面内浮层） -->
-<div id="mapHelpDlg" class="overlay hidden">
-  <div class="panel dlg-panel map-help-panel">
-    <div class="dlg-head">地图操作说明</div>
-    <div class="dlg-body map-help-body">
-      <p><b>移动</b>：聊天框 <code>!go 房间名</code>（只能去相邻未锁处）；<code>!here</code> 查看可去。</p>
-      <p><b>编辑（GM）</b>：先打开「编辑」模式。拖出矩形/圆形房间，再拖出「通道」走廊把房间连起来——通道贴到任何对象旁 1 格内即连通（圆形可轻微切入，最多 1 格，画时绿框提示已连通）。在相邻对象间放「门/梯」（门可锁，锁后玩家过不去；跨层放"梯"门）。右键点击任意房间/通道/门，会在光标旁弹出「删除」；工具栏/选中后也可删除、锁门、设入口。</p>
-      <p><b>楼层</b>：「＋楼层」加层；选中房间可设入口/揭晓隐藏/删除；选中门可锁/开锁/删除。</p>
-      <p><b>公开</b>：「一键公开」把房间展示给玩家。</p>
+<div id="mapHelpDlg" class="overlay hidden" data-page-node-id="8seCxmCSn15q7IEfUJvEMS">
+  <div class="panel dlg-panel map-help-panel" data-page-node-id="9qy5XmT9ozRFyqVebtPYSO">
+    <div class="dlg-head" data-page-node-id="dNrAeQ5IrqOAFXRhNF3sTV">地图操作说明</div>
+    <div class="dlg-body map-help-body" data-page-node-id="jpqh3NUO6LoSwYURdqJE2t">
+      <p data-page-node-id="NedoCXaAHrOm88VihaELXA"><b data-page-node-id="GpFYNYUtoY7I9piEZq30ol">移动</b>：聊天框 <code data-page-node-id="F31JJagJHBOQabQ4AMD4ts">!go 房间名</code>（只能去相邻未锁处）；<code data-page-node-id="vkDYYEHWs002RsLTab0qCk">!here</code> 查看可去。</p>
+      <p data-page-node-id="NDpR8WVaYTunk4AfKVHZOE"><b data-page-node-id="wgYvAFSCe1HkpVvb95E56K">编辑（GM）</b>：先打开「编辑」模式。拖出矩形/圆形房间，再拖出「通道」走廊把房间连起来——通道贴到任何对象旁 1 格内即连通（圆形可轻微切入，最多 1 格，画时绿框提示已连通）。在相邻对象间放「门/梯」（门可锁，锁后玩家过不去；跨层放"梯"门）。右键点击任意房间/通道/门，会在光标旁弹出「删除」；工具栏/选中后也可删除、锁门、设入口。</p>
+      <p data-page-node-id="eKRlE4EuTHNuUbPKiatBdH"><b data-page-node-id="YBtmVX6okARG26phXpSHOG">楼层</b>：「＋楼层」加层；选中房间可设入口/揭晓隐藏/删除；选中门可锁/开锁/删除。</p>
+      <p data-page-node-id="lRWspj6xrgpY6zmefsd5Sp"><b data-page-node-id="FEZzBg5nkYrPoLJS3aAWxZ">公开</b>：「公开本层 / 隐藏本层」只作用于当前楼层，「公开全部 / 隐藏全部」作用于所有楼层；按钮文案会随各自状态联动翻转（公开↔隐藏），但两者范围互不替代——隐藏本层不等于隐藏全部。</p>
     </div>
-    <div class="dlg-actions">
-      <button class="btn primary" id="mapHelpOk">知道了</button>
+    <div class="dlg-actions" data-page-node-id="eGFfNxsQpZJnEaiAEQFbZt">
+      <button class="btn primary" id="mapHelpOk" data-page-node-id="WaL4nnX0eDhpCz1D5kRiuH">知道了</button>
     </div>
   </div>
 </div>
 
 <!-- 地图右键部件弹出小菜单（删除） -->
-<div id="mapCtx" class="ctx-menu hidden"><button id="ctxDel" type="button">🗑 删除</button></div>
+<div id="mapCtx" class="ctx-menu hidden" data-page-node-id="PuAQvS2OEbWU0NssxOmzkF"><button id="ctxEntry" type="button" data-page-node-id="CGDMEJUUcZgktyFpEclFFL">⭐ 设为入口</button><button id="ctxLock" type="button" class="hidden">🔓 切换锁</button><button id="ctxDel" type="button" data-page-node-id="G3hxqQ9BZ9nDBMM6YPhwJV">🗑 删除</button></div>
 
 <!-- 新建房间：确认 + 命名对话框 -->
-<div id="createDlg" class="overlay hidden">
-  <div class="panel dlg-panel">
-    <div class="dlg-head" id="createTitle">新建房间</div>
-    <div class="dlg-body">
-      <div class="dlg-row dim" id="createType">矩形房间</div>
-      <div class="dlg-row dim" id="createSize">尺寸：3 × 3 格</div>
-      <div class="dlg-row">
-        <label class="dlg-label">设施类型</label>
-        <select id="createFac" class="dlg-select"></select>
+<div id="createDlg" class="overlay hidden" data-page-node-id="6BiuHBcFwmGwrVk8icS10C">
+  <div class="panel dlg-panel" data-page-node-id="9JzZjCke9i67LJDzZ6DCSu">
+    <div class="dlg-head" id="createTitle" data-page-node-id="Er20Uea4mcJh18DvPli4nK">新建房间</div>
+    <div class="dlg-body" data-page-node-id="ALOB6zdb8F3EE8bJk6EO3V">
+      <div class="dlg-row dim" id="createType" data-page-node-id="Yn46yOeoyBPQWErLOWP6zp">矩形房间</div>
+      <div class="dlg-row dim" id="createSize" data-page-node-id="DJBiJpotjAl4wQhrVJTfYA">尺寸：3 × 3 格</div>
+      <div class="dlg-row" data-page-node-id="IFSG6KBisYNYECnIlAnxFt">
+        <label class="dlg-label" data-page-node-id="5kKrpjeCc8ckGNulAOJV1Y">设施类型</label>
+        <select id="createFac" class="dlg-select" data-page-node-id="CwUpgeXItHQXcKn411VXGU"></select>
       </div>
-      <div class="dlg-row" id="createCustomRow" style="display:none">
-        <label class="dlg-label">自定义类型</label>
-        <div class="dlg-custom-in">
-          <input id="createCustomName" type="text" maxlength="10" placeholder="名称如 锅炉房" />
-          <input id="createCustomCode" type="text" maxlength="5" placeholder="缩写如 BOI" />
-          <input id="createCustomColor" type="color" value="#7fb0ff" title="房间底色" />
-          <button class="btn primary mini" id="createCustomAdd" type="button">添加</button>
+      <div class="dlg-row" id="createCustomRow" style="display:none" data-page-node-id="N4W1hSjmumGi8VXqB6A9Nu">
+        <label class="dlg-label" data-page-node-id="flxYkrXNLGtPJMNxNnat25">自定义类型</label>
+        <div class="dlg-custom-in" data-page-node-id="A5hnfdtAJoCf0eeiuGcVRF">
+          <input id="createCustomName" type="text" maxlength="10" placeholder="名称如 锅炉房" data-page-node-id="ZFIZXYD1LXGRjopvDpcYGP" />
+          <input id="createCustomCode" type="text" maxlength="5" placeholder="缩写如 BOI" data-page-node-id="LthouYdEu3IVuoLfTdPcjF" />
+          <input id="createCustomColor" type="color" value="#7fb0ff" title="房间底色" data-page-node-id="q4p2HciqPFuWJiJSneplTI" />
+          <button class="btn primary mini" id="createCustomAdd" type="button" data-page-node-id="rkPpdkXacXU0RM1rH5G0X7">添加</button>
         </div>
-        <div class="dlg-clash" id="createCustomErr" style="display:none"></div>
+        <div class="dlg-clash" id="createCustomErr" style="display:none" data-page-node-id="3sX7X2NFyNvhyb2woTEvhx"></div>
       </div>
-      <div class="dlg-row">
-        <label class="dlg-label">名称</label>
-        <input id="createName" type="text" maxlength="20" placeholder="留空则用编号" autocomplete="off" />
+      <div class="dlg-row" data-page-node-id="RgSfeDX2HEXDuTEzICzUEG">
+        <label class="dlg-label" data-page-node-id="hld3HbUUiW8E2s8PvzgwEo">名称</label>
+        <input id="createName" type="text" maxlength="20" placeholder="留空则用编号" autocomplete="off" data-page-node-id="JTqX8IvCA3xJBehEc34RET" />
       </div>
-      <div class="dlg-clash" id="createClash" style="display:none"></div>
+      <div class="dlg-clash" id="createClash" style="display:none" data-page-node-id="G2yvqyeKFvFnqb9SIC7anM"></div>
     </div>
-    <div class="dlg-actions">
-      <button class="btn flat" id="createCancel">取消</button>
-      <button class="btn primary" id="createConfirm">确认创建</button>
+    <div class="dlg-actions" data-page-node-id="o0jKVKzX11enFCqoThg2o4">
+      <button class="btn flat" id="createCancel" data-page-node-id="2UI4QePEzyqKMr19wqA5I9">取消</button>
+      <button class="btn primary" id="createConfirm" data-page-node-id="v8zSM8BnYT0HNSWT1xEnXe">确认创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- 通用内部确认 / 提示 / 输入弹窗（替代原生 confirm / alert / prompt） -->
+<div id="mapConfirmDlg" class="overlay hidden" data-page-node-id="aOahhTJ9F9qO7cbSQEFZZf">
+  <div class="panel dlg-panel" data-page-node-id="XDmRJaOBDktTCMJsvFJCx6">
+    <div class="dlg-head" id="dlgTitle" data-page-node-id="WWqmwI0yFCcJ6ekgiP3ZPv">请确认</div>
+    <div class="dlg-body" data-page-node-id="zPUG2bvKRh0r6zv0POAksU">
+      <div class="dlg-msg" id="dlgMsg" data-page-node-id="nwCr5x9yqPy7Emw3GnETXY"></div>
+      <div class="dlg-row hidden" id="dlgInputWrap" data-page-node-id="UweT82PaZqxXH0Iy1QfMGe">
+        <label class="dlg-label" id="dlgInputLabel" data-page-node-id="CAJwTAE5Ap86fZWEH6KEnn">输入</label>
+        <input id="dlgInput" type="text" maxlength="60" autocomplete="off" data-page-node-id="NKXTEhhwJVA6RBGKjFAkd9" />
+      </div>
+    </div>
+    <div class="dlg-actions" data-page-node-id="PrZ6mBjzt8i54YcDooQjvZ">
+      <button class="btn flat" id="dlgCancel" type="button" data-page-node-id="CZxEjUdkbgbth2gy92cB8L">取消</button>
+      <button class="btn primary" id="dlgConfirm" type="button" data-page-node-id="qJTtIyM1kMYT3ZhEthynoB">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置面板：改名 / 清除本端日志 / 导出日志 -->
+<div id="settingsModal" class="overlay hidden" data-page-node-id="setModal0">
+  <div class="panel modal-card" data-page-node-id="setCard00">
+    <div class="modal-head" data-page-node-id="setHead00">
+      <div class="logo" data-page-node-id="setLogo00">设置</div>
+      <button id="settingsClose" type="button" data-page-node-id="setClose0">✕</button>
+    </div>
+    <div class="modal-body" data-page-node-id="setBody00" style="flex-direction: column;">
+      <div class="sub" data-page-node-id="setSubN00">呼号 / 名字</div>
+      <div class="row" data-page-node-id="setRowN00">
+        <label data-page-node-id="setLblN00">当前名字</label>
+        <input id="setName" type="text" maxlength="20" autocomplete="off" data-page-node-id="setName00" />
+      </div>
+      <div class="form-actions" data-page-node-id="setActN00">
+        <button type="button" id="saveNameBtn" data-page-node-id="setSave00">保存名字</button>
+      </div>
+
+      <hr class="settings-sep" />
+      <div class="sub" data-page-node-id="setSubL00">日志</div>
+      <p class="dim" data-page-node-id="setNote00" style="font-size: 12px; margin: 0 0 12px;">清除只影响你本端显示，不改动服务器与其他人的记录；重新连接后会再次载入最近消息。</p>
+      <div class="form-actions" data-page-node-id="setActL00">
+        <button type="button" id="clearLogBtn" class="danger" data-page-node-id="setClear0">清除本端日志</button>
+        <button type="button" id="exportLogBtn2" data-page-node-id="setExp00">导出日志</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script src="/app.js"></script>
 <script src="/map.js"></script>
+
 </body>
 </html>

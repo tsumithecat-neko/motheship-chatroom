@@ -16,6 +16,7 @@ const DATA = isPkg ? path.join(EXE_DIR, 'data') : path.join(ROOT, 'data');
 const CHARFILE = path.join(DATA, 'characters.json');
 const MSGLOG = path.join(DATA, 'messages.json');
 const ROOMFILE = path.join(DATA, 'rooms.json');
+const BOOT = Date.now(); // 服务启动时刻（状态读数用）
 
 fs.mkdirSync(DATA, { recursive: true });
 
@@ -63,7 +64,7 @@ try { maps = JSON.parse(fs.readFileSync(MAPFILE, 'utf8')); } catch (e) { maps = 
 const mapVer = {};                                   // channelId -> version, bump on any change
 function saveMaps() { fs.writeFile(MAPFILE, JSON.stringify(maps), () => {}); }
 function mapUid(p) { return (p || 'x') + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-function emptyMap() { return { floors: [{ id: 'F1', name: '1F' }], rooms: [], passages: [], doors: [], entry: null }; }
+function emptyMap() { return { floors: [{ id: 'F1', name: '1F' }], rooms: [], passages: [], doors: [], entry: null, radar: true, entryVisible: false }; }
 // 兼容旧结构(v3: links 连接线 / 通道带 name)：links 升级为 door(旧线=未锁门/跨层=梯)；
 // 通道名弃用(通道不取名)。新结构只认 doors。
 function migrateMap(m) {
@@ -234,7 +235,9 @@ function viewMap(ch, call, gmFlag) {
       passages: JSON.parse(JSON.stringify(m.passages || [])),
       doors: JSON.parse(JSON.stringify(m.doors || [])),
       customTypes: JSON.parse(JSON.stringify(m.customTypes || [])),
-      players: collectPlayers(m)
+      players: collectPlayers(m),
+      radar: m.radar !== false,
+      entryVisible: !!m.entryVisible
     };
   }
   const my = ppos[pkey(call, ch)];
@@ -259,7 +262,7 @@ function viewMap(ch, call, gmFlag) {
   }).map((d) => ({ id: d.id, a: d.a, b: d.b, type: d.type || 'door', locked: !!d.locked }));
   const byZone = collectPlayers(m), players = {};
   for (const zid in byZone) { const z = findZone(m, zid); if (z && zoneFloor(z) === myFloor && roomVisible(zid)) players[zid] = byZone[zid]; }
-  return { entry: m.entry || null, floors: JSON.parse(JSON.stringify(m.floors || [])), curFloor: myFloor, rooms, passages, doors, players, customTypes: JSON.parse(JSON.stringify(m.customTypes || [])) };
+  return { entry: m.entry || null, floors: JSON.parse(JSON.stringify(m.floors || [])), curFloor: myFloor, rooms, passages, doors, players, customTypes: JSON.parse(JSON.stringify(m.customTypes || [])), radar: m.radar !== false, entryVisible: !!m.entryVisible };
 }
 
 // ---- 地图 op 应用（绘图权限仅 GM；位置类移动走 doGo，不由 op 处理）----
@@ -288,6 +291,7 @@ function applyMapOps(m, ops, user, gmFlag) {
       changed = true;
     } else if (op.t === 'room.del') {
       const i = (m.rooms || []).findIndex((r) => r.id === op.id); if (i >= 0) { m.rooms.splice(i, 1); changed = true; }
+      if (m.entry === op.id) m.entry = null;              // 删掉入口房间时一并清除残留入口
     } else if (op.t === 'passage.upsert') {
       const p = op.passage || {};
       const fid = ('' + (p.floorId || 'F1')).slice(0, 12) || 'F1';
@@ -340,6 +344,14 @@ function applyMapOps(m, ops, user, gmFlag) {
       // 自定义房间类型(设施)：GM 自定义名称+缩写(+颜色)，随地图持久化并同步给玩家
       const arr = Array.isArray(op.types) ? op.types : [];
       m.customTypes = arr.map((t) => ({ code: ('' + (t.code || '')).slice(0, 8), name: ('' + (t.name || '')).slice(0, 20), fill: ('' + (t.fill || 'rgba(40,90,60,0.92)')).slice(0, 40), line: ('' + (t.line || '#41e58f')).slice(0, 40) })).filter((t) => t.code);
+      changed = true;
+    } else if (op.t === 'radar.set') {
+      // 雷达开关：控制侧栏小地图的显示（关闭时所有客户端的小地图都画上"信号丢失"）
+      m.radar = !!op.v;
+      changed = true;
+    } else if (op.t === 'entry.toggle') {
+      // 入口可见开关：玩家端小地图强制显示入口房间（不依赖已探索）
+      m.entryVisible = !!op.v;
       changed = true;
     }
   }
@@ -711,7 +723,17 @@ const server = http.createServer((req, res) => {
         const r = parseDice(text, user, room, gm);
         if (r) { if (!r.user) r.user = user; addMessage(room, r); }
       } else if (text.trim()) {
-        addMessage(room, { type: 'msg', user, text });
+        // 发言身份：player（默认）/ character（用角色卡 name）/ scene（场景/旁白）
+        let as = parsed.as;
+        if (as !== 'character' && as !== 'scene') as = 'player';
+        const msg = { type: 'msg', user, text, as };
+        if (as === 'character') {
+          // charId 必须是当前 user 在该 room 的角色卡 key，否则降级为 player
+          const key = room + '::' + user;
+          if (characters[key] && (!parsed.charId || parsed.charId === key)) msg.charId = key;
+          else { msg.as = 'player'; delete msg.charId; }
+        }
+        addMessage(room, msg);
       }
       sendJSON(res, { ok: 1 });
     });
@@ -919,9 +941,55 @@ const server = http.createServer((req, res) => {
         saveMaps();
         mapVer[room] = (mapVer[room] || 0) + 1;
         // 只广播版本号：玩家侧重新拉取（服务端已做房间级过滤）
-        broadcast(room, { type: 'map', room, v: mapVer[room] });
+        // 雷达开关特殊处理：广播 reason 让客户端知道要播扫描动画
+        const isRadar = Array.isArray(d.ops) && d.ops.some((o) => o && o.t === 'radar.set');
+        const isEntry = Array.isArray(d.ops) && d.ops.some((o) => o && o.t === 'entry.toggle');
+        broadcast(room, { type: 'map', room, v: mapVer[room], reason: isRadar ? 'radar' : (isEntry ? 'entry' : undefined), radar: m.radar !== false, entryVisible: !!m.entryVisible });
       }
       sendJSON(res, { ok: 1, v: mapVer[room] || 0 });
+    });
+    return;
+  }
+
+  // 整体替换地图（GM 专用）：导入 JSON 用。body: { room, user, gm, map }
+  if (req.method === 'POST' && p === '/api/map') {
+    readBody(req, (b) => {
+      let d; try { d = JSON.parse(b); } catch (e) { res.writeHead(400); res.end('bad'); return; }
+      const room = d.room || 'general';
+      const roomObj = findRoom(room);
+      if (!roomObj) { sendJSON(res, { ok: 0, error: 'no_room' }); return; }
+      const gm = d.gm || '';
+      if (!isGM(gm)) { res.writeHead(403); res.end('denied'); return; }
+      if (!canAccess(((d.user || '') + '').slice(0, 20) || '匿名', gm, roomObj)) { sendJSON(res, { ok: 0, error: 'no_access' }); return; }
+      const src = d.map || {};
+      const next = {
+        entry: src.entry || null,
+        floors: Array.isArray(src.floors) ? src.floors : [{ id: 'F1', name: '1F' }],
+        rooms: Array.isArray(src.rooms) ? src.rooms : [],
+        passages: Array.isArray(src.passages) ? src.passages : [],
+        doors: Array.isArray(src.doors) ? src.doors : [],
+        customTypes: Array.isArray(src.customTypes) ? src.customTypes : []
+      };
+      maps[room] = migrateMap(next);
+      if (!Array.isArray(maps[room].floors) || !maps[room].floors.length) maps[room].floors = [{ id: 'F1', name: '1F' }];
+      saveMaps();
+      bumpMap(room);
+      broadcast(room, { type: 'map', room, v: mapVer[room] });
+      sendJSON(res, { ok: 1, v: mapVer[room] || 0 });
+    });
+    return;
+  }
+
+  // ---- 终端状态读数（真实数据）：运行时长 / 在线连接 / 今日消息数 ----
+  if (req.method === 'GET' && p === '/api/status') {
+    let today = 0;
+    const day0 = new Date(); day0.setHours(0, 0, 0, 0);
+    for (const k in messages) for (const m of (messages[k] || [])) if ((m.ts || 0) >= day0.getTime()) today++;
+    sendJSON(res, {
+      ok: 1,
+      uptime: Math.floor((Date.now() - BOOT) / 1000),
+      online: clients.length,
+      today
     });
     return;
   }

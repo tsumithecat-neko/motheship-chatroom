@@ -278,7 +278,7 @@ function applyLocal(ops) {
   for (const op of ops || []) {
     if (!op || !op.t) continue;
     if (op.t === 'room.upsert') { const r = op.room; const i = (d.rooms || []).findIndex(x => x.id === r.id); if (i >= 0) d.rooms[i] = Object.assign({}, d.rooms[i], r); else (d.rooms = d.rooms || []).push(r); }
-    else if (op.t === 'room.del') { d.rooms = (d.rooms || []).filter(x => x.id !== op.id); }
+    else if (op.t === 'room.del') { d.rooms = (d.rooms || []).filter(x => x.id !== op.id); if (d.entry === op.id) d.entry = null; }
     else if (op.t === 'passage.upsert') { const p = op.passage; const i = (d.passages || []).findIndex(x => x.id === p.id); if (i >= 0) d.passages[i] = Object.assign({}, d.passages[i], p); else (d.passages = d.passages || []).push(p); }
     else if (op.t === 'passage.del') { d.passages = (d.passages || []).filter(x => x.id !== op.id); }
     else if (op.t === 'door.set') { const x = op.door; const i = (d.doors || []).findIndex(g => (g.a === x.a && g.b === x.b) || (g.b === x.a && g.a === x.b)); if (i >= 0) d.doors[i] = Object.assign({}, d.doors[i], x); else (d.doors = d.doors || []).push(x); }
@@ -321,7 +321,7 @@ function paint(ctx, W, H) {
   const d = MS.data; if (!d) return;
   const showGrid = MS.mode === 'edit';
   const gbg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.15, W / 2, H / 2, Math.max(W, H) * 0.75);
-  gbg.addColorStop(0, '#0c1d15'); gbg.addColorStop(1, '#050b08');
+  gbg.addColorStop(0, '#101823'); gbg.addColorStop(1, '#05080c');
   ctx.fillStyle = gbg; ctx.fillRect(0, 0, W, H);
   const inView = (x, y) => x > -60 && x < W + 60 && y > -60 && y < H + 60;
   const c = CELL * MS.scale;
@@ -330,38 +330,68 @@ function paint(ctx, W, H) {
     const g0x = Math.floor(-MS.ox / c) | 0, g1x = Math.ceil((W - MS.ox) / c) | 0;
     const g0y = Math.floor(-MS.oy / c) | 0, g1y = Math.ceil((H - MS.oy) / c) | 0;
     ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(120,255,170,0.18)'; ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.beginPath();
     for (let g = g0x; g <= g1x; g++) { if (g % 5 === 0) continue; const x = rp(g); if (inView(x, 0)) { ctx.moveTo(x, 0); ctx.lineTo(x, H); } }
     for (let g = g0y; g <= g1y; g++) { if (g % 5 === 0) continue; const y = rpY(g); if (inView(0, y)) { ctx.moveTo(0, y); ctx.lineTo(W, y); } }
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(150,255,190,0.35)'; ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.20)'; ctx.beginPath();
     for (let g = g0x; g <= g1x; g++) { if (g % 5 !== 0) continue; const x = rp(g); if (inView(x, 0)) { ctx.moveTo(x, 0); ctx.lineTo(x, H); } }
     for (let g = g0y; g <= g1y; g++) { if (g % 5 !== 0) continue; const y = rpY(g); if (inView(0, y)) { ctx.moveTo(0, y); ctx.lineTo(W, y); } }
     ctx.stroke();
     const oxp = rp(0), oyp = rpY(0);
     if (inView(oxp, oyp)) { ctx.strokeStyle = 'rgba(255,210,120,0.85)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(oxp - 8, oyp); ctx.lineTo(oxp + 8, oyp); ctx.moveTo(oxp, oyp - 8); ctx.lineTo(oxp, oyp + 8); ctx.stroke(); ctx.fillStyle = 'rgba(255,210,120,0.9)'; ctx.font = '10px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.fillText('0,0', oxp + 10, oyp - 6); }
-    ctx.fillStyle = 'rgba(150,255,190,0.55)'; ctx.font = '10px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10px system-ui,sans-serif';
     for (let g = g0x; g <= g1x; g++) { if (g % 5 !== 0) continue; const x = rp(g); if (inView(x, 12)) ctx.fillText(String(g), x + 2, 11); }
     for (let g = g0y; g <= g1y; g++) { if (g % 5 !== 0) continue; const y = rpY(g); if (inView(12, y)) ctx.fillText(String(g), 2, y - 2); }
   }
   // zones(当前层)：先统一填充，再统一描边并互相抠掉相接处，使连通的房间/通道看起来一体
-  const zs = curZones(d);
+  let zs = curZones(d);
+  // 侧栏小地图：只渲染已揭晓的房间（未揭晓的直接不画，连雾块都不留）
+  // 例外：entryVisible=true 时强制把入口房间显示出来（不依赖探索）
+  if (MS.__mini) {
+    const dL = MS.data;
+    const eid = dL && dL.entry;
+    const ev = !!(dL && dL.entryVisible);
+    zs = {
+      rooms: zs.rooms.filter((r) => r.explored || (ev && r.id === eid)),
+      passages: zs.passages
+    };
+  }
   const kinds = new Map();
   for (const r of zs.rooms) kinds.set(r.id, 'room');
   for (const p of zs.passages) kinds.set(p.id, 'passage');
   drawZones(ctx, zs.rooms.concat(zs.passages), kinds);
   // 门/梯画在房间之上（含选中高亮）
   drawDoors(ctx);
-  // 入口标记(房间顶部文字 + 房间中心星标)
+  // 入口标记。大地图：房间顶部「★入口」+ 中心★；小地图：入口房间高亮虚线框 + 顶部 ENTRY 小签（只画一个标记）。
+  // 未公开的入口房间在小地图上不画任何标记（与"只画已揭晓"一致，避免出现孤零零的星）。
   const entry = d.entry ? zf(d.entry) : null;
-  if (entry && (entry.floorId || 'F1') === myFloor) {
+  if (entry && (entry.floorId || 'F1') === myFloor && !(MS.__mini && hiddenInMini(entry))) {
     const z = entry, ec = zoneCenter(z), bb = zbox(z);
-    const topY = rpY(bb.y0) - 4;
-    ctx.fillStyle = '#eaffc9'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('★入口', rp(ec.x), topY - 4);
-    ctx.font = 'bold ' + Math.max(14, c * 0.5) + 'px sans-serif';
-    ctx.fillText('★', rp(ec.x), rpY(ec.y) + 6);
-    ctx.textAlign = 'left';
+    if (MS.__mini) {
+      const c2 = CELL * MS.scale;
+      const ex = rp(bb.x0) - 3, ey = rpY(bb.y0) - 3;
+      const ew = (bb.x1 - bb.x0) * c2 + 6, eh = (bb.y1 - bb.y0) * c2 + 6;
+      ctx.save();
+      ctx.strokeStyle = '#eaffc9'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+      ctx.strokeRect(ex, ey, ew, eh);
+      ctx.setLineDash([]);
+      if (ey >= 14) {                       // 顶部空间够才画小签，避免出界
+        ctx.font = 'bold 9px system-ui,sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = '#eaffc9';
+        ctx.fillText('▲ ENTRY', rp(ec.x), ey - 4);
+      }
+      ctx.restore();
+      ctx.textAlign = 'left';
+    } else {
+      const topY = rpY(bb.y0) - 4;
+      ctx.fillStyle = '#eaffc9'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('★入口', rp(ec.x), topY - 4);
+      ctx.font = 'bold ' + Math.max(14, c * 0.5) + 'px sans-serif';
+      ctx.fillText('★', rp(ec.x), rpY(ec.y) + 6);
+      ctx.textAlign = 'left';
+    }
   }
   // players(仅当前层)
   drawPlayers(ctx);
@@ -393,12 +423,12 @@ function facInfo(code) {
 }
 function zoneStyle(z, kind) {
   const showMode = MS.mode === 'show';
-  const isUnrevealed = kind === 'room' && showMode && !z.explored;
-  if (kind === 'passage') return { fill: 'rgba(90,170,130,0.55)', line: '#7fe0a8', isUnrevealed: false };
-  if (isUnrevealed) return { fill: 'rgba(60,100,80,0.55)', line: 'rgba(140,200,170,0.6)', isUnrevealed: true };
+  const isUnrevealed = kind === 'room' && showMode && !isGM && !z.explored;
+  if (kind === 'passage') return { fill: 'rgba(150,158,168,0.40)', line: 'rgba(255,255,255,0.85)', isUnrevealed: false };
+  if (isUnrevealed) return { fill: 'rgba(74,82,92,0.55)', line: 'rgba(205,213,221,0.55)', isUnrevealed: true };
   const f = facInfo(z.type);
   if (f) return { fill: f.fill, line: f.line, isUnrevealed: false };
-  return { fill: 'rgba(28,82,54,0.95)', line: '#41e58f', isUnrevealed: false };
+  return { fill: 'rgba(54,62,72,0.95)', line: 'rgba(255,255,255,0.90)', isUnrevealed: false };
 }
 // zonePath 支持多边形/矩形房间
 function zonePath(ctx, z, pad) {
@@ -582,7 +612,7 @@ function drawZone(ctx, z, kind) {
   if (kind === 'room') {
     const f = facInfo(z.type);
     const code = f ? f.code : 'RM';
-    const codeCol = f ? f.line : '#41e58f';
+    const codeCol = f ? f.line : '#ffffff';
     const fs = Math.max(10, c * 0.34);
     ctx.font = 'bold ' + fs + 'px ui-monospace, Menlo, Consolas, monospace';
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
@@ -599,7 +629,7 @@ function drawZone(ctx, z, kind) {
     const label = z.name + (isUnrevealed ? ' (未揭示)' : '');
     ctx.font = 'bold ' + Math.max(10, c * 0.4) + 'px system-ui,sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = isUnrevealed ? 'rgba(150,190,170,0.8)' : '#d7ffdf';
+    ctx.fillStyle = isUnrevealed ? 'rgba(205,215,225,0.8)' : '#ffffff';
     ctx.fillText(label, rp(ec.x), rpY(ec.y));
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
@@ -612,10 +642,21 @@ function drawZone(ctx, z, kind) {
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
 }
+// 小地图：未揭晓的房间不画，所以连着它的门也要一并藏起来
+function hiddenInMini(z) {
+  if (!z) return true;
+  if (!MS.__mini) return false;
+  if (!z.shape) return false;                  // 通道永远可见
+  if (z.explored) return false;               // 已揭晓：可见
+  const d = MS.data;
+  if (d && d.entryVisible && d.entry && z.id === d.entry) return false;   // 入口可见开关：强制显示入口
+  return true;
+}
 function drawDoors(ctx) {
   const d = MS.data, myFloor = curFloor(); if (!d) return;
   for (const g of (d.doors || [])) {
     const a = zf(g.a), b = zf(g.b); if (!a || !b) continue;
+    if (MS.__mini && (hiddenInMini(a) || hiddenInMini(b))) continue;
     const hereA = (a.floorId || 'F1') === myFloor, hereB = (b.floorId || 'F1') === myFloor;
     if (!hereA && !hereB) continue;                                  // 两端都不在本层
     const isSel = MS.sel && MS.selType === 'door' && MS.sel === g.id;
@@ -639,7 +680,7 @@ function drawDoor(ctx, g, isSel) {
     vert = oy >= ox;
   }
   const sz = passageRoom ? Math.max(14, c * 1.0) : Math.max(8, c * 0.5);
-  const col = cross ? '#e6c860' : '#4ee18f';
+  const col = cross ? '#e6c860' : '#ffffff';
   const lineCol = g.locked ? '#ff8f6b' : col;
   // 主体：门为一条横跨"缝"的短杆 + 端点；锁则加锁点；梯画 ↕
   ctx.save();
@@ -653,7 +694,7 @@ function drawDoor(ctx, g, isSel) {
   if (passageRoom) {
     const lw = vert ? Math.max(7, c * 0.5) : sz * 0.82;
     const lh = vert ? sz * 0.82 : Math.max(7, c * 0.5);
-    ctx.fillStyle = g.locked ? 'rgba(255,143,107,0.20)' : 'rgba(78,225,143,0.16)';
+    ctx.fillStyle = g.locked ? 'rgba(255,143,107,0.20)' : 'rgba(255,255,255,0.16)';
     const rx = px - lw / 2, ry = py - lh / 2;
     if (typeof ctx.roundRect === 'function') { ctx.beginPath(); ctx.roundRect(rx, ry, lw, lh, Math.min(4, lw / 2, lh / 2)); ctx.fill(); }
     else ctx.fillRect(rx, ry, lw, lh);
@@ -671,7 +712,7 @@ function drawDoor(ctx, g, isSel) {
   ctx.beginPath(); ctx.arc(px, py, sz / 2 + 2, 0, Math.PI * 2); ctx.stroke();
   // 标签：用两位英文缩写(与房间角标一致)，等宽字体更科幻
   const la = zoneCode(a), lb = zoneCode(b);
-  ctx.fillStyle = g.locked ? '#ffb28f' : (cross ? '#ffe9a8' : '#d7ffdf');
+  ctx.fillStyle = g.locked ? '#ffb28f' : (cross ? '#ffe9a8' : '#ffffff');
   ctx.font = 'bold ' + Math.max(9, c * 0.32) + 'px ui-monospace, Menlo, Consolas, monospace'; ctx.textAlign = 'center';
   ctx.fillText(cross ? ('↕' + (a.floorId || 'F1') + '↕' + (b.floorId || 'F1')) : (g.locked ? '🔒 ' + la + '·' + lb : la + '↔' + lb), px, py - sz / 2 - 6);
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
@@ -684,6 +725,7 @@ function drawPlayers(ctx) {
   const colFor = (call) => { let h = 0; for (let i = 0; i < call.length; i++) h = (h * 31 + call.charCodeAt(i)) >>> 0; return colors[h % colors.length]; };
   for (const zid in (d.players || {})) {
     const z = zf(zid); if (!z || (z.floorId || 'F1') !== myFloor) continue;
+    if (MS.__mini && hiddenInMini(z)) continue;    // 小地图：未公开房间里的玩家不画
     for (const pl of d.players[zid]) {
       const cx = rp(pl.x + 0.5), cy = rpY(pl.y + 0.5), R = Math.max(6, c * 0.34);
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = colFor(pl.call); ctx.fill();
@@ -699,13 +741,13 @@ function drawStroke(ctx) {
   const c = CELL * MS.scale; const myFloor = curFloor();
   // 多边形房间预览(逐点放置顶点)
   if (MS.polyPts && MS.polyPts.length) {
-    ctx.strokeStyle = '#7fe0a8'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
     ctx.beginPath(); ctx.moveTo(rp(MS.polyPts[0].x), rpY(MS.polyPts[0].y));
     for (let i = 1; i < MS.polyPts.length; i++) ctx.lineTo(rp(MS.polyPts[i].x), rpY(MS.polyPts[i].y));
     if (MS.aim) ctx.lineTo(rp(MS.aim.x), rpY(MS.aim.y));
     ctx.stroke(); ctx.setLineDash([]);
-    for (const p of MS.polyPts) { ctx.fillStyle = '#7fe0a8'; ctx.beginPath(); ctx.arc(rp(p.x), rpY(p.y), 3, 0, Math.PI * 2); ctx.fill(); }
-    ctx.fillStyle = '#7fe0a8'; ctx.font = '12px system-ui,sans-serif'; ctx.textAlign = 'left';
+    for (const p of MS.polyPts) { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(rp(p.x), rpY(p.y), 3, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#ffffff'; ctx.font = '12px system-ui,sans-serif'; ctx.textAlign = 'left';
     ctx.fillText('多边形房间：点击放顶点，双击/点首点闭合（已 ' + MS.polyPts.length + ' 点）', rp(MS.polyPts[0].x), rpY(MS.polyPts[0].y) - 8);
   }
   const s = MS.stroke; if (!s || !s.x1) return;
@@ -716,14 +758,14 @@ function drawStroke(ctx) {
   const info = draftInfo(probe, MS.data);
   const st = strokeState(info);
   ctx.strokeStyle = st.col; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.strokeRect(px, py, pw, ph); ctx.setLineDash([]);
-  ctx.fillStyle = st.col === '#ff6b6b' ? 'rgba(255,107,107,0.14)' : (st.ok ? 'rgba(90,220,140,0.14)' : 'rgba(255,215,106,0.12)'); ctx.fillRect(px, py, pw, ph);
+  ctx.fillStyle = st.col === '#ff6b6b' ? 'rgba(255,107,107,0.14)' : (st.ok ? 'rgba(255,255,255,0.14)' : 'rgba(255,215,106,0.12)'); ctx.fillRect(px, py, pw, ph);
   ctx.fillStyle = st.col; ctx.font = '12px system-ui,sans-serif'; ctx.textAlign = 'left';
   ctx.fillText(kindName + ' ' + Math.max(1, Math.round(w)) + '×' + Math.max(1, Math.round(h)) + st.txt, px, py - 6);
 }
 function strokeState(info) {
   if (!info) return { col: '#ffd76a', ok: false, txt: '' };
   if (info.deep) return { col: '#ff6b6b', ok: false, txt: ' ⚠穿入过深(' + zoneLabel1(info.deep.zone) + ')' };
-  if (info.nearest && info.nearest.gap <= ADJ) return { col: '#5adc8c', ok: true, txt: ' ✓连通 ' + zoneLabel1(info.nearest.zone) };
+  if (info.nearest && info.nearest.gap <= ADJ) return { col: '#ffffff', ok: true, txt: ' ✓连通 ' + zoneLabel1(info.nearest.zone) };
   const g = info.nearest ? info.nearest.gap : null;
   return { col: '#ffd76a', ok: false, txt: g == null ? '' : ' · 距 ' + zoneLabel1(info.nearest.zone) + ' ' + g.toFixed(1) + ' 格' };
 }
@@ -742,20 +784,133 @@ function render() {
   renderLegend();
   renderRoomList();
   updateAimOverlay();
+  updatePub();
+  renderMini();                    // 大地图有改动时同步侧栏小地图
 }
+/* ---- 侧栏小地图：玩家视角（只画已揭晓 · 自动适应小窗 · 标出自己） ----
+   实现要点：临时改 MS.mode / MS.floor / MS.ox / MS.oy / MS.scale 后调用 paint()，
+   画完立刻还原，因此不会污染大地图弹窗的视图与编辑状态。            */
+function miniOn() {
+  const p = M('#sidePanel');
+  return !!(p && !p.classList.contains('collapsed') && p.offsetParent !== null);
+}
+function myZoneId() {
+  const d = MS.data; if (!d) return null;
+  const players = d.players || {};
+  for (const zid in players) if (players[zid].some((pl) => pl.call === user)) return zid;
+  return null;
+}
+function miniBBox() {
+  const d = MS.data; if (!d) return null;
+  const f = curFloor(), mine = myZoneId();
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const grow = (x, y) => { if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y; };
+  const addZ = (z) => {
+    if (z.shape === 'poly' && Array.isArray(z.polygon) && z.polygon.length) { const bb = polyBBox(z.polygon); grow(bb.x0, bb.y0); grow(bb.x1, bb.y1); }
+    else { grow(z.x, z.y); grow(z.x + z.w, z.y + z.h); }
+  };
+  (d.rooms || []).filter((r) => (r.floorId || 'F1') === f && (r.explored || r.id === mine || (d.entryVisible && r.id === d.entry))).forEach(addZ);
+  (d.passages || []).filter((p) => (p.floorId || 'F1') === f).forEach(addZ);
+  if (x0 === Infinity) return null;
+  return { x0, y0, x1, y1 };
+}
+function drawMiniSelf(ctx) {
+  const d = MS.data; if (!d) return;
+  const zid = myZoneId(); if (!zid) return;
+  const z = zoneAtFloor(d, zid); if (!z || (z.floorId || 'F1') !== curFloor() || hiddenInMini(z)) return;
+  const pl = (d.players[zid] || []).find((p) => p.call === user); if (!pl) return;
+  const c = CELL * MS.scale;
+  const cx = rp(pl.x + 0.5), cy = rpY(pl.y + 0.5), R = Math.max(6, c * 0.34);
+  ctx.save();
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.arc(cx, cy, R + 5, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ffffff'; ctx.font = 'bold 9px system-ui,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('你', cx, cy - R - 8);
+  ctx.textAlign = 'left';
+  ctx.restore();
+}
+function renderMini() {
+  const wrap = M('#miniMapWrap'), cvs = M('#miniMapCanvas');
+  if (!wrap || !cvs) return;
+  const info = M('#miniMapInfo');
+  if (!miniOn()) return;                                  // 折叠或窄屏隐藏时不绘制
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if (w <= 0 || h <= 0) return;
+  const dpr = window.devicePixelRatio || 1;
+  const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+  if (cvs.width !== pw || cvs.height !== ph) { cvs.width = pw; cvs.height = ph; cvs.style.width = w + 'px'; cvs.style.height = h + 'px'; }
+  const ctx = cvs.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const d = MS.data;
+  if (!d) {
+    ctx.clearRect(0, 0, w, h);
+    if (info) info.textContent = '等待地图数据…';
+    return;
+  }
+  // —— 保存大地图状态 ——
+  const sv = { ox: MS.ox, oy: MS.oy, scale: MS.scale, mode: MS.mode, floor: MS.floor, sel: MS.sel, selType: MS.selType, aim: MS.aim, stroke: MS.stroke, mini: MS.__mini };
+  MS.__mini = true; MS.mode = 'show';
+  MS.sel = null; MS.selType = ''; MS.aim = null; MS.stroke = null;
+  // 楼层跟随自己所在处
+  const zid = myZoneId();
+  let here = null;
+  if (zid) { const z = zoneAtFloor(d, zid); if (z) { MS.floor = z.floorId || 'F1'; here = z; } }
+  const floorTag = curFloor();
+  // 自动缩放到已揭晓区域
+  const bb = miniBBox();
+  if (!bb) {
+    MS.scale = 0.6; MS.ox = w / 2 - 6 * CELL * MS.scale; MS.oy = h / 2 - 4 * CELL * MS.scale;
+  } else {
+    const pad = 20, c = CELL;
+    const bw = Math.max(1, (bb.x1 - bb.x0) * c), bh = Math.max(1, (bb.y1 - bb.y0) * c);
+    const s = Math.max(0.15, Math.min(2.5, (w - pad) / bw, (h - pad) / bh));
+    MS.scale = s;
+    MS.ox = (w - (bb.x1 - bb.x0) * c * s) / 2 - bb.x0 * c * s;
+    MS.oy = (h - (bb.y1 - bb.y0) * c * s) / 2 - bb.y0 * c * s;
+  }
+  paint(ctx, w, h);
+  drawMiniSelf(ctx);
+  // —— 还原大地图状态 ——
+  MS.ox = sv.ox; MS.oy = sv.oy; MS.scale = sv.scale; MS.mode = sv.mode; MS.floor = sv.floor;
+  MS.sel = sv.sel; MS.selType = sv.selType; MS.aim = sv.aim; MS.stroke = sv.stroke; MS.__mini = sv.mini;
+  // 底部状态行
+  if (info) {
+    const nm = here ? (zoneName(here) || '未命名区域') : '';
+    if (nm) info.innerHTML = '你在 <b>' + escapeHtml(nm) + '</b> · ' + escapeHtml(String(floorTag)) + ' 层 · !go 房间名 移动';
+    else if (bb) info.textContent = floorTag + ' 层 · 尚未进入船内（!here / !go 房间名）';
+    else info.textContent = d.entryVisible ? '本层已开启入口 · 等待玩家进入' : '本层还没有已公开的区域，请 GM 在地图里「公开本层」';
+  }
+}
+// 供 app.js 在登录 / 切换频道时调用：丢弃旧数据重新拉当前频道的地图
+window.reloadMap = function () { MS.data = null; MS.v = -1; MS.__needFit = true; loadMap(); };
+(function bindSidePanel() {
+  const p = M('#sidePanel'); if (!p) return;
+  const rail = M('#sideRail');
+  if (rail) rail.addEventListener('click', () => { p.classList.remove('collapsed'); renderMini(); });
+  const col = M('#sideCollapse');
+  if (col) col.addEventListener('click', () => {
+    p.classList.add('collapsed');
+    try { localStorage.setItem('mothership_side', 'collapsed'); } catch (e) {}
+  });
+  try { if (localStorage.getItem('mothership_side') === 'collapsed') p.classList.add('collapsed'); } catch (e) {}
+  window.addEventListener('resize', () => { clearTimeout(MS.__miniTimer); MS.__miniTimer = setTimeout(renderMini, 120); });
+})();
+
 function renderLegend() {
   const el = M('#mapLegend'); if (!el) return;
   const items = FACILITIES.map((f) => '<span class="lg-item"><span class="lg-dot" style="background:' + f.line + '"></span><b class="lg-code">' + f.code + '</b> ' + f.name + '</span>');
   const cust = (MS.data && MS.data.customTypes) || [];
   if (cust.length) { items.push('<span class="lg-cap">自定义类型</span>'); cust.forEach((f) => items.push('<span class="lg-item"><span class="lg-dot" style="background:' + f.line + '"></span><b class="lg-code">' + f.code + '</b> ' + f.name + '</span>')); }
   items.unshift('<span class="lg-cap">设施对照（房间角标缩写）</span>');
-  items.push('<span class="lg-item"><span class="lg-dot" style="background:#7fe0a8"></span>通道</span>');
+  items.push('<span class="lg-item"><span class="lg-dot" style="background:#ffffff"></span>通道</span>');
   el.innerHTML = items.join('');
 }
 
 // ---- 房间列表（按楼层分组，每行 打开/关闭）----
 function hexToRgba(hex, a) {
-  const h = (hex || '#41e58f').replace('#', '');
+  const h = (hex || '#ffffff').replace('#', '');
   const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
   const n = parseInt(full, 16);
   return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
@@ -996,9 +1151,9 @@ function commitCreate() {
   const d = MS.data; if (!d) return;
   const name = (M('#createName').value || '').trim().slice(0, 20);
   const type = (M('#createFac') ? M('#createFac').value : '') || '';
-  if (type === '__custom__') { alert('请先填写名称与缩写，点「添加」创建自定义类型'); return; }
+  if (type === '__custom__') { mapAlert('请先填写名称与缩写，点「添加」创建自定义类型'); return; }
   const myFloor = s.floorId;
-  const roomOk = (probe) => { const i = draftInfo(probe, d); if (i.deep) { alert('与「' + zoneName(i.deep.zone) + '」穿插过深，无法创建'); return false; } return true; };
+  const roomOk = (probe) => { const i = draftInfo(probe, d); if (i.deep) { mapAlert('与「' + zoneName(i.deep.zone) + '」穿插过深，无法创建'); return false; } return true; };
   if (s.kind === 'poly') {
     const probe = { id: uid('R'), shape: 'poly', floorId: myFloor, polygon: s.polygon };
     if (!roomOk(probe)) return;
@@ -1006,7 +1161,7 @@ function commitCreate() {
     const op = { t: 'room.upsert', room }; pushUndo(op, true); applyLocal([op]); sendOps([op]);
   } else if (s.kind === 'passage') {
     const probe = { id: uid('P'), floorId: myFloor, shape: 'rect', x: s.x, y: s.y, w: s.w, h: s.h };
-    const i = draftInfo(probe, d); if (i.deep) { alert('与「' + zoneName(i.deep.zone) + '」穿插过深，无法创建'); return; }
+    const i = draftInfo(probe, d); if (i.deep) { mapAlert('与「' + zoneName(i.deep.zone) + '」穿插过深，无法创建'); return; }
     const passage = { id: probe.id, x: s.x, y: s.y, w: s.w, h: s.h, floorId: myFloor, name };
     const op = { t: 'passage.upsert', passage }; pushUndo(op, true); applyLocal([op]); sendOps([op]);
   } else {
@@ -1031,11 +1186,11 @@ function renderFloorTabs() {
   bar.innerHTML = h;
   bar.querySelectorAll('.map-floor-tab').forEach((tab) => {
     const fx = tab.querySelector('.fx');
-    if (fx) fx.addEventListener('click', (ev) => { ev.stopPropagation(); const fid = tab.dataset.fid; if (floors.length <= 1) { alert('至少保留一层'); return; } if (!confirm('删除该层及其所有房间？')) return; const op = { t: 'floor.del', id: fid }; pushUndo(op); applyLocal([op]); sendOps([op]); if (MS.floor === fid) { MS.floor = (d.floors || [])[0] ? (d.floors || [])[0].id : null; } renderFloorTabs(); render(); });
+    if (fx) fx.addEventListener('click', async (ev) => { ev.stopPropagation(); const fid = tab.dataset.fid; if (floors.length <= 1) { mapAlert('至少保留一层'); return; } if (!(await mapConfirm('删除该层及其所有房间？'))) return; const op = { t: 'floor.del', id: fid }; pushUndo(op); applyLocal([op]); sendOps([op]); if (MS.floor === fid) { MS.floor = (d.floors || [])[0] ? (d.floors || [])[0].id : null; } renderFloorTabs(); render(); });
     tab.addEventListener('click', () => { MS.floor = tab.dataset.fid; MS.sel = null; MS.stroke = null; renderFloorTabs(); render(); fit(); });
   });
   const add = M('#mapFloorAdd');
-  if (add) add.addEventListener('click', () => { const name = prompt('楼层名（如 2F）') || ''; const fid = uid('F'); const op = { t: 'floor.add', floor: { id: fid, name: (name || '').slice(0, 12) } }; pushUndo(op); applyLocal([op]); sendOps([op]); MS.floor = fid; renderFloorTabs(); render(); });
+  if (add) add.addEventListener('click', async () => { const name = (await mapPrompt('楼层名（如 2F）', '', '如 2F')) || ''; const fid = uid('F'); const op = { t: 'floor.add', floor: { id: fid, name: (name || '').slice(0, 12) } }; pushUndo(op); applyLocal([op]); sendOps([op]); MS.floor = fid; renderFloorTabs(); render(); });
 }
 
 /* ---- 模式切换 UI ---- */
@@ -1081,6 +1236,56 @@ function applyMode() {
   render();
 }
 
+/* ---- 通用内部弹窗：替代原生 confirm / alert / prompt（所有弹窗都在地图内显示） ---- */
+let _dlgResolver = null;
+function mapDialog(opts) {
+  return new Promise((resolve) => {
+    const dlg = document.getElementById('mapConfirmDlg');
+    if (!dlg) { resolve(opts.input ? null : false); return; }
+    document.getElementById('dlgTitle').textContent = opts.title || '请确认';
+    document.getElementById('dlgMsg').textContent = opts.msg || '';
+    const iw = document.getElementById('dlgInputWrap');
+    const inp = document.getElementById('dlgInput');
+    if (opts.input) {
+      iw.classList.remove('hidden');
+      inp.value = (opts.value != null ? opts.value : '');
+      inp.placeholder = opts.placeholder || '';
+      inp.maxLength = opts.maxLength || 60;
+      document.getElementById('dlgInputLabel').textContent = opts.label || '输入';
+    } else {
+      iw.classList.add('hidden');
+    }
+    const ok = document.getElementById('dlgConfirm');
+    const cx = document.getElementById('dlgCancel');
+    ok.textContent = opts.confirmText || '确定';
+    cx.textContent = opts.cancelText || '取消';
+    ok.classList.toggle('danger', !!opts.danger);
+    if (opts.cancelText === false) cx.classList.add('hidden'); else cx.classList.remove('hidden');
+    _dlgResolver = (val) => { dlg.classList.add('hidden'); _dlgResolver = null; resolve(val); };
+    dlg.classList.remove('hidden');
+    if (opts.input) setTimeout(() => { inp.focus(); inp.select(); }, 20);
+    else setTimeout(() => ok.focus(), 20);
+  });
+}
+function mapConfirm(msg, title) { return mapDialog({ title: title || '请确认', msg, confirmText: '确定', cancelText: '取消' }); }
+function mapAlert(msg, title) { return mapDialog({ title: title || '提示', msg, confirmText: '知道了', cancelText: false }); }
+function mapPrompt(msg, value, placeholder, title) { return mapDialog({ title: title || '输入', msg, input: true, value: value || '', placeholder: placeholder || '', confirmText: '确定', cancelText: '取消' }); }
+(function bindDlg() {
+  const dlg = document.getElementById('mapConfirmDlg');
+  if (!dlg) return;
+  const ok = document.getElementById('dlgConfirm');
+  const cx = document.getElementById('dlgCancel');
+  ok.addEventListener('click', () => { if (!_dlgResolver) return; const iw = document.getElementById('dlgInputWrap'); const inp = document.getElementById('dlgInput'); _dlgResolver(iw.classList.contains('hidden') ? true : inp.value); });
+  cx.addEventListener('click', () => { if (_dlgResolver) _dlgResolver(false); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && _dlgResolver) _dlgResolver(false); });
+  document.addEventListener('keydown', (e) => {
+    if (!_dlgResolver) return;
+    const iw = document.getElementById('dlgInputWrap');
+    if (e.key === 'Escape') { e.preventDefault(); _dlgResolver(false); }
+    else if (e.key === 'Enter') { e.preventDefault(); const inp = document.getElementById('dlgInput'); _dlgResolver(iw.classList.contains('hidden') ? true : inp.value); }
+  });
+})();
+
 /* ---- 载入 / 开关 ---- */
 function loadMap() {
   MS.room = mapRoomId();
@@ -1096,13 +1301,78 @@ function loadMap() {
       if (floors.length && !floors.find(f => f.id === MS.floor)) MS.floor = floors[0].id;
       if (!MS.floor && floors.length) MS.floor = floors[0].id;
       renderFloorTabs();
-      if (first) { setTimeout(fit, 40); }
-      else { render(); }
+      // 首次载入：大地图已打开就 fit；否则先记下来（视图尚未布局），等真正打开时再 fit
+      if (first) {
+        if (isOpen()) setTimeout(fit, 40);
+        else MS.__needFit = true;
+      } else if (isOpen()) {
+        if (MS.__needFit) { MS.__needFit = false; setTimeout(fit, 40); }
+        else render();
+      }
       modeInfo();
+      renderMini();                      // 同步侧栏小地图
     }).catch(() => {});
 }
 let mapReloadTimer = null;
-function onMapEvent(m) { if (!isOpen() || !m || m.room !== MS.room) return; clearTimeout(mapReloadTimer); mapReloadTimer = setTimeout(loadMap, 200); }
+// 侧栏小地图常驻，因此地图变更事件不再要求大地图弹窗处于打开状态
+function onMapEvent(m) {
+  if (!m || m.room !== mapRoomId()) return;
+  // 雷达开关触发的广播：先播扫描动画，再 reload
+  if (m.reason === 'radar') {
+    playRadarFx(!!m.radar, function () { afterRadarReload(); });
+    return;
+  }
+  // 入口可见开关：不播动画，直接刷新（数据轻，视觉变化小）
+  if (m.reason === 'entry') {
+    afterRadarReload();
+    return;
+  }
+  clearTimeout(mapReloadTimer);
+  mapReloadTimer = setTimeout(loadMap, 200);
+}
+function afterRadarReload() {
+  clearTimeout(mapReloadTimer);
+  mapReloadTimer = setTimeout(function () { loadMap(); if (typeof applyMapStates === 'function') applyMapStates(); else if (typeof applyRadarState === 'function') applyRadarState(); }, 80);
+}
+
+// ---- 雷达开关：全屏「电视故障」覆盖层（纯 CSS keyframes） ----
+// on=true 开雷达（绿色屏 / 较少黑屏）   on=false 关雷达（红色屏 / 多重黑屏抖动）
+// onDone: 动画结束后的回调（用于 reload + 应用新状态）
+const RADAR_FX_MS = 1000;
+let _radarFxTimer = null, _radarFxOnDone = null;
+function playRadarFx(on, onDone) {
+  const fx = M('#radarFx');
+  if (!fx) { if (onDone) onDone(); return; }
+  // 取消上一次（如果还在播）
+  if (_radarFxTimer) { clearTimeout(_radarFxTimer); _radarFxTimer = null; }
+  if (_radarFxOnDone) { try { _radarFxOnDone(); } catch (e) {} _radarFxOnDone = null; }
+
+  // 重置/重启动画：先强制 reflow 再切换 class，确保 keyframes 重新跑
+  fx.classList.remove('on', 'off');
+  // force reflow
+  void fx.offsetWidth;
+  fx.classList.add(on ? 'on' : 'off');
+  fx.classList.remove('hidden');
+
+  // 文字
+  const txt = M('#radarFxText');
+  const tag = M('#radarFxTag');
+  const sub = M('#radarFxSub');
+  const time = M('#radarFxTime');
+  if (txt) txt.textContent = on ? 'SCANNING…' : 'SIGNAL OFFLINE…';
+  if (tag) tag.textContent = on ? 'SCAN · BOOT' : 'SCAN · SHUTDOWN';
+  if (sub) sub.textContent = on ? 'CH 04 · DECODE 0%' : 'CH 04 · DECODE LOST';
+  if (time) time.textContent = 'T+ 00:00:0' + (on ? '1' : '0');
+
+  _radarFxOnDone = onDone || null;
+  _radarFxTimer = setTimeout(function () {
+    fx.classList.add('hidden');
+    fx.classList.remove('on', 'off');
+    _radarFxTimer = null;
+    const cb = _radarFxOnDone; _radarFxOnDone = null;
+    if (cb) cb();
+  }, RADAR_FX_MS + 60);                       // 多 60ms 等动画收尾
+}
 function openMap() {
   const d0 = MS.data;
   M('#mapModal').classList.remove('hidden');
@@ -1110,7 +1380,7 @@ function openMap() {
   // 初始化模式
   if (isGM) { MS.mode = 'edit'; } else { MS.mode = 'show'; }
   if (MS.data && MS.room !== mapRoomId()) MS.data = null;
-  M('#mapDel').classList.add('hidden'); M('#mapEntryBtn').classList.add('hidden'); M('#mapExploreBtn').classList.add('hidden'); M('#mapOpenBtn').classList.add('hidden');
+  M('#mapDel').classList.add('hidden'); M('#mapExploreBtn').classList.add('hidden'); M('#mapOpenBtn').classList.add('hidden');
   // 同步按钮态
   const editBtn = M('#mapModeEdit'), showBtn = M('#mapModeShow');
   if (editBtn) editBtn.classList.toggle('on', isGM && MS.mode === 'edit');
@@ -1124,7 +1394,6 @@ function updateAct() {
   const hasSel = !!MS.sel;
   M('#mapDel').classList.toggle('hidden', !hasSel);
   const selRoom = hasSel && MS.selType === 'room' ? zf(MS.sel) : null;
-  M('#mapEntryBtn').classList.toggle('hidden', !selRoom);
   M('#mapExploreBtn').classList.toggle('hidden', !selRoom);
   const openBtn = M('#mapOpenBtn');
   if (openBtn) {
@@ -1161,6 +1430,39 @@ M('#mapClose').addEventListener('click', closeMap);
 M('#mapUndo').addEventListener('click', undoMap);
 M('#mapRedo').addEventListener('click', redoMap);
 M('#mapPng').addEventListener('click', exportPng);
+// 导出 / 导入地图 JSON
+M('#mapExport').addEventListener('click', () => {
+  if (!MS.data) return;
+  const payload = { version: 1, exportedAt: new Date().toISOString(), map: MS.data };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'map-' + (MS.room || 'general') + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  tip('已导出地图 JSON');
+});
+M('#mapImport').addEventListener('click', () => { const fi = M('#mapFileInput'); if (fi) fi.click(); });
+M('#mapFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  if (!(await mapConfirm('导入将覆盖当前地图的全部楼层、房间、通道、门与自定义类型，确定继续？', '导入地图'))) return;
+  let text;
+  try { text = await file.text(); } catch (err) { mapAlert('读取文件失败'); return; }
+  let parsed;
+  try { parsed = JSON.parse(text); } catch (err) { mapAlert('导入失败：文件不是合法的 JSON'); return; }
+  const src = parsed.map || parsed;                       // 兼容「带封装的导出文件」与「纯 map 对象」
+  if (!src || typeof src !== 'object') { mapAlert('导入失败：文件中没有可用的地图数据'); return; }
+  try {
+    const res = await fetch('/api/map', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room: MS.room, user, gm: gmCode, map: src })
+    });
+    const j = await res.json().catch(() => ({}));
+    if (j && j.ok) { tip('已导入地图，正在刷新…'); loadMap(); }
+    else { mapAlert('导入失败：' + ((j && j.error) || ('HTTP ' + res.status))); }
+  } catch (err) { mapAlert('导入失败：网络错误'); }
+});
 M('#mapFit').addEventListener('click', fit);
 M('#mapZoomIn').addEventListener('click', () => { MS.scale = Math.min(5, MS.scale * 1.25); render(); });
 M('#mapZoomOut').addEventListener('click', () => { MS.scale = Math.max(0.2, MS.scale / 1.25); render(); });
@@ -1177,8 +1479,8 @@ const mbEdit = M('#mapModeEdit'), mbShow = M('#mapModeShow');
 if (mbEdit) mbEdit.addEventListener('click', () => { if (!isGM) return; MS.mode = 'edit'; mbEdit.classList.add('on'); if (mbShow) mbShow.classList.remove('on'); applyMode(); });
 if (mbShow) mbShow.addEventListener('click', () => { if (!isGM) return; MS.mode = 'show'; if (mbEdit) mbEdit.classList.remove('on'); mbShow.classList.add('on'); applyMode(); });
 // 删除
-M('#mapDel').addEventListener('click', () => {
-  if (!MS.sel || !confirm('删除所选元素？')) return;
+M('#mapDel').addEventListener('click', async () => {
+  if (!MS.sel || !(await mapConfirm('删除所选元素？'))) return;
   doDelete(MS.selType, MS.sel);
 });
 // 右键部件弹出小菜单：在光标右侧显示"删除"
@@ -1208,6 +1510,18 @@ function onCtxMenu(e) {
   const hit = pickComponent(toLog(pos(e)));
   if (!hit) { hideCtx(); return; }
   // 菜单定位到"整数准星"位置(吸附后的格点)而非裸的系统鼠标位置，让系统鼠标和准星对齐，便于点击
+  const entryBtn = M('#ctxEntry');
+  if (entryBtn) entryBtn.classList.toggle('hidden', hit.kind !== 'room');   // 入口仅对房间可设
+  const lockBtn = M('#ctxLock');
+  if (lockBtn) {
+    if (hit.kind === 'door') {
+      const g = (MS.data.doors || []).find(x => x.id === hit.id);
+      lockBtn.textContent = g && g.locked ? '🔓 开锁' : '🔒 锁门';
+      lockBtn.classList.remove('hidden');
+    } else {
+      lockBtn.classList.add('hidden');
+    }
+  }
   const r = M('#mapCanvas').getBoundingClientRect();
   const lg = toLog(pos(e));
   const sx = Math.round(lg.x), sy = Math.round(lg.y);
@@ -1225,17 +1539,35 @@ function doDelete(type, id) {
 }
 const ctxDel = M('#ctxDel');
 if (ctxDel) ctxDel.addEventListener('click', (e) => { e.stopPropagation(); const t = MS.ctxTarget; hideCtx(); if (t) doDelete(t.kind, t.id); });
+// 右键菜单"切换锁"：门专属
+const ctxLockBtn = M('#ctxLock');
+if (ctxLockBtn) ctxLockBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const t = MS.ctxTarget; hideCtx();
+  if (!t || t.kind !== 'door') return;
+  const g = (MS.data.doors || []).find(x => x.id === t.id); if (!g) return;
+  const op = { t: 'door.lock', id: g.id, a: g.a, b: g.b, v: !g.locked };
+  pushUndo(op); applyLocal([op]); sendOps([op]); updateAct(); render();
+  tip(g.locked ? '已开锁' : '已锁门');
+});
 M('#mapLockBtn').addEventListener('click', () => {
   if (!MS.sel || MS.selType !== 'door') return;
   const g = (MS.data.doors || []).find(x => x.id === MS.sel); if (!g) return;
   const op = { t: 'door.lock', id: g.id, a: g.a, b: g.b, v: !g.locked };
   pushUndo(op); applyLocal([op]); sendOps([op]); updateAct(); render();
 });
-M('#mapEntryBtn').addEventListener('click', () => {
-  if (!MS.sel || MS.selType !== 'room') return;
-  const cur = MS.data.entry; const op = { t: 'entry', id: MS.sel }; op.__prev = cur || null;
+// 右键菜单"设为入口"：房间专属；地图上已有入口且不是本房间时询问是否重设
+async function doSetEntry(id) {
+  if (!id) return;
+  const r = zf(id); if (!r) return;
+  const cur = MS.data.entry;
+  if (cur && cur === id) { tip('该房间已是入口'); return; }
+  if (cur && cur !== id && !(await mapConfirm('地图上已有入口「' + (zoneName(zf(cur)) || '房间') + '」，是否将入口重设为当前房间「' + (zoneName(r) || '房间') + '」？'))) return;
+  const op = { t: 'entry', id }; op.__prev = cur || null;
   pushUndo(op); applyLocal([op]); sendOps([op]); tip('已设为入口'); render();
-});
+}
+const ctxEntry = M('#ctxEntry');
+if (ctxEntry) ctxEntry.addEventListener('click', (e) => { e.stopPropagation(); const t = MS.ctxTarget; hideCtx(); if (t && t.kind === 'room') doSetEntry(t.id); });
 M('#mapExploreBtn').addEventListener('click', () => {
   if (!MS.sel || MS.selType !== 'room') return;
   const r = zf(MS.sel); if (!r) return;
@@ -1252,9 +1584,25 @@ M('#mapOpenBtn').addEventListener('click', () => {
   tip(closing ? '已「关闭」：玩家无法进入此房间（通道/门不通行）' : '已「开放」：玩家可进入此房间');
   updateAct(); render();
 });
-// 一键公开
-const pubCur = M('#mapPublishFloor'), pubAll = M('#mapPublishAll');if (pubCur) pubCur.addEventListener('click', () => { if (!isGM) return; const op = { t: 'explore.floor', floor: curFloor(), v: true }; pushUndo(op); applyLocal([op]); sendOps([op]); tip('已公开当前楼层'); render(); });
-if (pubAll) pubAll.addEventListener('click', () => { if (!isGM) return; const op = { t: 'explore.all', v: true }; pushUndo(op); applyLocal([op]); sendOps([op]); tip('已公开全部楼层'); render(); });
+// 公开 / 隐藏：两个按钮，文案随各自状态联动翻转（公开↔隐藏）。
+// 范围互不替代：隐藏本层只隐藏当前层、隐藏全部才隐藏所有层，二者的状态各自独立计算。
+function floorPublic(floorId) {
+  const rs = (MS.data.rooms || []).filter(r => (r.floorId || 'F1') === floorId);
+  return rs.length > 0 && rs.every(r => r.explored);
+}
+function allPublic() {
+  const rs = MS.data.rooms || [];
+  return rs.length > 0 && rs.every(r => r.explored);
+}
+function updatePub() {
+  if (!MS.data) return;
+  const pf = M('#mapPublishFloor'), pa = M('#mapPublishAll');
+  if (pf) { const p = floorPublic(curFloor()); pf.textContent = p ? '隐藏本层' : '公开本层'; pf.title = p ? '把当前楼层的房间对玩家隐藏' : '把当前楼层的房间全部对玩家公开'; pf.classList.toggle('amber', !p); }
+  if (pa) { const p = allPublic(); pa.textContent = p ? '隐藏全部' : '公开全部'; pa.title = p ? '把全部楼层的房间对玩家隐藏' : '把全部楼层的房间全部对玩家公开'; pa.classList.toggle('amber', !p); }
+}
+const pubCur = M('#mapPublishFloor'), pubAllBtn = M('#mapPublishAll');
+if (pubCur) pubCur.addEventListener('click', () => { if (!isGM) return; const f = curFloor(); const p = floorPublic(f); const op = { t: 'explore.floor', floor: f, v: !p }; pushUndo(op); applyLocal([op]); sendOps([op]); tip(p ? '已隐藏当前楼层' : '已公开当前楼层'); updatePub(); render(); });
+if (pubAllBtn) pubAllBtn.addEventListener('click', () => { if (!isGM) return; const p = allPublic(); const op = { t: 'explore.all', v: !p }; pushUndo(op); applyLocal([op]); sendOps([op]); tip(p ? '已隐藏全部楼层' : '已公开全部楼层'); updatePub(); render(); });
 document.querySelectorAll('button.tool').forEach((b) => {
   b.addEventListener('click', () => {
     MS.tool = b.dataset.tool; MS.linkA = null; MS.stroke = null; MS.polyPts = null;
@@ -1268,7 +1616,7 @@ document.querySelectorAll('button.tool').forEach((b) => {
     else if (MS.tool === 'poly') tip('多边形房间：依次点击放置顶点(吸附格点)，点回首点闭合；Enter 也可闭合，Esc 取消');
     else if (MS.tool === 'passage') tip('拖出通道（走廊）。伸到房间/通道旁 1 格内即连通；绿框=已连通');
     else if (MS.tool === 'door') tip('点两个相邻(贴边即算)的对象放一扇门；若两处在不同楼层则自动成“梯”。可再点选门后锁/开锁');
-    else if (MS.tool === 'select') tip('点选房间/通道/门；门可锁/开锁/删除；右键点部件弹出删除，右键拖拽平移');
+    else if (MS.tool === 'select') tip('点选房间/通道/门；门可锁/开锁/删除；右键点房间可设入口，右键拖拽平移');
     else tip('');
   });
 });
