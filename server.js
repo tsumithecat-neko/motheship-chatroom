@@ -87,14 +87,14 @@ function findZone(m, id) {
 function zoneFloor(z) { return (z && z.floorId) || 'F1'; }
 function bumpMap(ch) { mapVer[ch] = (mapVer[ch] || 0) + 1; }
 
-// 房间/通道内部的整数站格(逻辑格, 每格 1 单位)。rect: x..x+w-1/y..y+h-1；circle: 距中心<=r 的整数点。
+// 房间/通道内部的整数站格(逻辑格, 每格 1 单位)。rect: x..x+w-1/y..y+h-1；poly: 用点in多边形判定。
 function zoneCells(z) {
   const out = [];
-  if (z.shape === 'circle') {
-    const r = Math.max(1, Math.round(z.r || 1));
-    for (let y = Math.floor(z.cy - r); y <= Math.ceil(z.cy + r); y++)
-      for (let x = Math.floor(z.cx - r); x <= Math.ceil(z.cx + r); x++)
-        if ((x - z.cx) * (x - z.cx) + (y - z.cy) * (y - z.cy) <= r * r + 0.01) out.push({ x, y });
+  if (z.shape === 'poly' && Array.isArray(z.polygon) && z.polygon.length) {
+    const bb = polyBBox(z.polygon);
+    for (let y = Math.floor(bb.y0); y <= Math.ceil(bb.y1); y++)
+      for (let x = Math.floor(bb.x0); x <= Math.ceil(bb.x1); x++)
+        if (pointInPoly({ x, y }, z.polygon)) out.push({ x, y });
     return out;
   }
   const w = Math.max(1, Math.round(z.w || 1)), h = Math.max(1, Math.round(z.h || 1));
@@ -103,12 +103,12 @@ function zoneCells(z) {
 }
 
 // ---- 门/可达：真实几何相邻 + 门判定 ----
-// 相邻定义：同层两对象(房间/通道，含圆)的真实最短距离 ≤ ADJ(容差1格) 即可走。
-// 这样：贴边(gap≈0)可走；通道轻微切入圆/对象(≤ADJ)也算可走——解决"圆没有直边、难贴"的痛点。
+// 相邻定义：同层两对象(房间/通道，含多边形)的真实最短距离 ≤ ADJ(容差1格) 即可走。
+// 这样：贴边(gap≈0)可走；通道轻微切入对象(≤ADJ)也算可走。
 // 创建时只禁止"过度穿透"(gap < -ADJ)，即允许最多轻切1格。
 const ADJ = 1;                                                        // 相邻/轻切容差(格)
 function zoneBox(z) {
-  if (z.shape === 'circle') return { x0: z.cx - z.r, y0: z.cy - z.r, x1: z.cx + z.r, y1: z.cy + z.r };
+  if (z.shape === 'poly' && Array.isArray(z.polygon) && z.polygon.length) return polyBBox(z.polygon);
   return { x0: z.x, y0: z.y, x1: z.x + (z.w || 1), y1: z.y + (z.h || 1) };
 }
 // 点到轴对齐矩形最近距离(≥0)
@@ -120,14 +120,35 @@ function rectRectGap(a, b) {                                          // 负=重
   if (xov >= 0 && yov >= 0) return -Math.min(xov, yov);               // 双向重叠 => 切入深度
   return xov < 0 ? -xov : -yov;                                       // 仅单轴重叠 => 另一边间距
 }
-function circleRectGap(c, rc) { return distPtRect(c.cx, c.cy, rc) - c.r; }   // 圆心到矩形 - r(负=切入)
-function circleCircleGap(c1, c2) { return Math.hypot(c1.cx - c2.cx, c1.cy - c2.cy) - c1.r - c2.r; }
+// ---- 直角多边形几何(轴对齐边, 凸, 顶点贴格点) ----
+function polyBBox(poly){ let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity; for(const p of poly){ if(p.x<x0)x0=p.x; if(p.y<y0)y0=p.y; if(p.x>x1)x1=p.x; if(p.y>y1)y1=p.y; } return {x0,y0,x1,y1}; }
+function rectPoly(z){ return [{x:z.x,y:z.y},{x:z.x+z.w,y:z.y},{x:z.x+z.w,y:z.y+z.h},{x:z.x,y:z.y+z.h}]; }
+function pointInPoly(pt, poly){ let inside=false; for(let i=0,j=poly.length-1;i<poly.length;j=i++){ const xi=poly[i].x,yi=poly[i].y,xj=poly[j].x,yj=poly[j].y; if(((yi>pt.y)!==(yj>pt.y))&&(pt.x<(xj-xi)*(pt.y-yi)/(yj-yi)+xi)) inside=!inside; } return inside; }
+function pointSeg(p,a,b){ const dx=b.x-a.x,dy=b.y-a.y; const L2=dx*dx+dy*dy; if(L2===0) return Math.hypot(p.x-a.x,p.y-a.y); let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/L2; t=Math.max(0,Math.min(1,t)); return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy)); }
+function segPointSeg(a1,a2,b1,b2){ return Math.min(pointSeg(a1,b1,b2),pointSeg(a2,b1,b2),pointSeg(b1,a1,a2),pointSeg(b2,a1,a2)); }
+function segIntersect(p1,p2,p3,p4){ const d=(p2.x-p1.x)*(p4.y-p3.y)-(p2.y-p1.y)*(p4.x-p3.x); if(d===0)return false; const t=((p3.x-p1.x)*(p4.y-p3.y)-(p3.y-p1.y)*(p4.x-p3.x))/d; const u=((p3.x-p1.x)*(p2.y-p1.y)-(p3.y-p1.y)*(p2.x-p1.x))/d; return t>=0&&t<=1&&u>=0&&u<=1; }
+function polyPolyGap(pa, pb){
+  const ba=polyBBox(pa), bb=polyBBox(pb);
+  if(rectRectGap(ba,bb) > ADJ*2) return rectRectGap(ba,bb); // 包围盒远隔，快速返回
+  let minD=Infinity;
+  for(let i=0;i<pa.length;i++){ const a1=pa[i],a2=pa[(i+1)%pa.length];
+    for(let j=0;j<pb.length;j++){ const b1=pb[j],b2=pb[(j+1)%pb.length];
+      if(segIntersect(a1,a2,b1,b2)) return 0;               // 边相交/重叠 => 真实相邻
+      const dd=segPointSeg(a1,a2,b1,b2); if(dd<minD)minD=dd;
+    }
+  }
+  let inside=false;
+  for(const p of pa) if(pointInPoly(p,pb)){inside=true;break;}
+  if(!inside) for(const p of pb) if(pointInPoly(p,pa)){inside=true;break;}
+  if(inside) return -Math.min(minD,1);                      // 包含 => 负(重叠)
+  return minD;
+}
 // 两 zone 真实最短间隙(≤0 表示已相交/切入)。调用方须先确保同层。
 function shapeGap(a, b) {
-  const ac = a.shape === 'circle', bc = b.shape === 'circle';
-  if (ac && bc) return circleCircleGap(a, b);
-  if (ac || bc) { const c = ac ? a : b, rc = ac ? zoneBox(b) : zoneBox(a); return circleRectGap(c, rc); }
-  return rectRectGap(zoneBox(a), zoneBox(b));
+  const ap = a.shape === 'poly', bp = b.shape === 'poly';
+  if (!ap && !bp) return rectRectGap(zoneBox(a), zoneBox(b));
+  const pa = ap ? a.polygon : rectPoly(a), pb = bp ? b.polygon : rectPoly(b);
+  return polyPolyGap(pa, pb);
 }
 // 同层几何相邻(贴边或轻切≤ADJ)即"可走"
 function touches(a, b) { if (!a || !b || zoneFloor(a) !== zoneFloor(b)) return false; return shapeGap(a, b) <= ADJ; }
@@ -212,6 +233,7 @@ function viewMap(ch, call, gmFlag) {
       rooms: JSON.parse(JSON.stringify(m.rooms || [])),
       passages: JSON.parse(JSON.stringify(m.passages || [])),
       doors: JSON.parse(JSON.stringify(m.doors || [])),
+      customTypes: JSON.parse(JSON.stringify(m.customTypes || [])),
       players: collectPlayers(m)
     };
   }
@@ -224,7 +246,7 @@ function viewMap(ch, call, gmFlag) {
   // 该层通道恒可见
   const visPass = new Set((m.passages || []).filter((p) => zoneFloor(p) === myFloor).map((p) => p.id));
   const roomVisible = (id) => visRoom.has(id) || visPass.has(id);
-  const rooms = (m.rooms || []).filter((r) => visRoom.has(r.id)).map((r) => ({ id: r.id, shape: r.shape, x: r.x, y: r.y, w: r.w, h: r.h, cx: r.cx, cy: r.cy, r: r.r, name: r.name, floorId: zoneFloor(r), explored: true, open: r.open !== false }));
+  const rooms = (m.rooms || []).filter((r) => visRoom.has(r.id)).map((r) => ({ id: r.id, shape: r.shape, x: r.x, y: r.y, w: r.w, h: r.h, polygon: r.shape === 'poly' ? r.polygon : undefined, type: r.type || '', name: r.name, floorId: zoneFloor(r), explored: true, open: r.open !== false }));
   const passages = (m.passages || []).filter((p) => visPass.has(p.id)).map((p) => ({ id: p.id, x: p.x, y: p.y, w: p.w, h: p.h, floorId: zoneFloor(p) }));
   // 门/梯：同层两 zone 都在本层可见才显示；跨层梯本层那端可见即显示(标注去向)。locked 不隐藏(玩家需看到"锁着的门")
   const doors = (m.doors || []).filter((d) => {
@@ -237,7 +259,7 @@ function viewMap(ch, call, gmFlag) {
   }).map((d) => ({ id: d.id, a: d.a, b: d.b, type: d.type || 'door', locked: !!d.locked }));
   const byZone = collectPlayers(m), players = {};
   for (const zid in byZone) { const z = findZone(m, zid); if (z && zoneFloor(z) === myFloor && roomVisible(zid)) players[zid] = byZone[zid]; }
-  return { entry: m.entry || null, floors: JSON.parse(JSON.stringify(m.floors || [])), curFloor: myFloor, rooms, passages, doors, players };
+  return { entry: m.entry || null, floors: JSON.parse(JSON.stringify(m.floors || [])), curFloor: myFloor, rooms, passages, doors, players, customTypes: JSON.parse(JSON.stringify(m.customTypes || [])) };
 }
 
 // ---- 地图 op 应用（绘图权限仅 GM；位置类移动走 doGo，不由 op 处理）----
@@ -248,11 +270,19 @@ function applyMapOps(m, ops, user, gmFlag) {
     if (!op || !op.t) continue;
     if (op.t === 'room.upsert') {
       const r = op.room || {};
-      const shape = r.shape === 'circle' ? 'circle' : 'rect';
       const fid = ('' + (r.floorId || 'F1')).slice(0, 12) || 'F1';
-      const clean = shape === 'circle'
-        ? { id: r.id || mapUid('R'), floorId: fid, shape, cx: +r.cx, cy: +r.cy, r: Math.max(1, +r.r || 2), name: (r.name || '').slice(0, 20), explored: !!r.explored }
-        : { id: r.id || mapUid('R'), floorId: fid, shape, x: Math.round(+r.x), y: Math.round(+r.y), w: Math.max(1, Math.round(+r.w || 3)), h: Math.max(1, Math.round(+r.h || 3)), name: (r.name || '').slice(0, 20), explored: !!r.explored };
+      let clean;
+      if (r.shape === 'poly' && Array.isArray(r.polygon) && r.polygon.length >= 3) {
+        const bb = polyBBox(r.polygon);
+        clean = { id: r.id || mapUid('R'), floorId: fid, shape: 'poly',
+          x: Math.round(bb.x0), y: Math.round(bb.y0), w: Math.max(1, Math.round(bb.x1 - bb.x0)), h: Math.max(1, Math.round(bb.y1 - bb.y0)),
+          polygon: r.polygon.map((p) => ({ x: Math.round(+p.x), y: Math.round(+p.y) })),
+          type: (r.type || '').slice(0, 8), name: (r.name || '').slice(0, 20), explored: !!r.explored };
+      } else {
+        clean = { id: r.id || mapUid('R'), floorId: fid, shape: 'rect',
+          x: Math.round(+r.x), y: Math.round(+r.y), w: Math.max(1, Math.round(+r.w || 3)), h: Math.max(1, Math.round(+r.h || 3)),
+          type: (r.type || '').slice(0, 8), name: (r.name || '').slice(0, 20), explored: !!r.explored };
+      }
       const i = (m.rooms || []).findIndex((z) => z.id === clean.id);
       if (i >= 0) m.rooms[i] = Object.assign({}, m.rooms[i], clean); else (m.rooms = m.rooms || []).push(clean);
       changed = true;
@@ -306,6 +336,11 @@ function applyMapOps(m, ops, user, gmFlag) {
         if (m.entry && gone.has(m.entry)) m.entry = null;
         changed = true;
       }
+    } else if (op.t === 'types.set') {
+      // 自定义房间类型(设施)：GM 自定义名称+缩写(+颜色)，随地图持久化并同步给玩家
+      const arr = Array.isArray(op.types) ? op.types : [];
+      m.customTypes = arr.map((t) => ({ code: ('' + (t.code || '')).slice(0, 8), name: ('' + (t.name || '')).slice(0, 20), fill: ('' + (t.fill || 'rgba(40,90,60,0.92)')).slice(0, 40), line: ('' + (t.line || '#41e58f')).slice(0, 40) })).filter((t) => t.code);
+      changed = true;
     }
   }
   return changed;

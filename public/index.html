@@ -172,16 +172,16 @@
           <div class="map-sec-t">绘制房间</div>
           <div class="map-btns">
             <button class="mini tool" data-tool="rect">矩形</button>
-            <button class="mini tool" data-tool="circle">圆形</button>
+            <button class="mini tool" data-tool="poly">多边形</button>
           </div>
-          <div class="map-hint">圆形房间用「通道」轻切进圆周即可连通</div>
+          <div class="map-hint">矩形拖出；多边形逐点点击(点回首点闭合)。形状自选后再选类型</div>
         </div>
         <div class="map-sec gm-only" data-edit="1">
           <div class="map-sec-t">走廊通道</div>
           <div class="map-btns">
             <button class="mini tool" data-tool="passage">通道</button>
           </div>
-          <div class="map-hint">拖出走廊，伸到房间/通道边 1 格内即互通（圆形可轻切）</div>
+          <div class="map-hint">拖出走廊，伸到房间/通道边 1 格内即互通</div>
         </div>
         <div class="map-sec gm-only" data-edit="1">
           <div class="map-sec-t">门 / 梯</div>
@@ -205,7 +205,7 @@
           <div class="map-btns">
             <button class="mini tool" data-tool="select">选择</button>
           </div>
-          <div class="map-hint">门/房间/通道可选中 · 右键拖拽平移</div>
+          <div class="map-hint">门/房间/通道可选中 · 右键点部件弹出删除</div>
         </div>
         <div class="map-sec">
           <div class="map-sec-t">视图</div>
@@ -216,11 +216,16 @@
           </div>
           <div class="map-hint" id="mapViewHint">滚轮缩放 · 拖拽平移</div>
         </div>
+        <div class="map-sec gm-only" id="roomListSec">
+          <div class="map-sec-t">房间列表 <span class="dim" id="roomListCount"></span></div>
+          <div class="map-roomlist" id="mapRoomList"></div>
+        </div>
       </div>
       <div class="map-main">
         <div class="map-floors gm-only" id="mapFloors"></div>
         <div class="map-tipbar" id="mapTip"></div>
-        <div class="map-canvas-wrap" id="mapWrap"><canvas id="mapCanvas"></canvas></div>
+        <div class="map-canvas-wrap" id="mapWrap"><canvas id="mapCanvas"></canvas><div id="mapAim" class="map-aim"><span class="aim-dot"></span><span class="aim-coord"></span></div></div>
+        <div class="map-legend" id="mapLegend"></div>
       </div>
     </div>
   </div>
@@ -232,7 +237,7 @@
     <div class="dlg-head">地图操作说明</div>
     <div class="dlg-body map-help-body">
       <p><b>移动</b>：聊天框 <code>!go 房间名</code>（只能去相邻未锁处）；<code>!here</code> 查看可去。</p>
-      <p><b>编辑（GM）</b>：先打开「编辑」模式。拖出矩形/圆形房间，再拖出「通道」走廊把房间连起来——通道贴到任何对象旁 1 格内即连通（圆形可轻微切入，最多 1 格，画时绿框提示已连通）。在相邻对象间放「门/梯」（门可锁，锁后玩家过不去；跨层放"梯"门）。</p>
+      <p><b>编辑（GM）</b>：先打开「编辑」模式。拖出矩形/圆形房间，再拖出「通道」走廊把房间连起来——通道贴到任何对象旁 1 格内即连通（圆形可轻微切入，最多 1 格，画时绿框提示已连通）。在相邻对象间放「门/梯」（门可锁，锁后玩家过不去；跨层放"梯"门）。右键点击任意房间/通道/门，会在光标旁弹出「删除」；工具栏/选中后也可删除、锁门、设入口。</p>
       <p><b>楼层</b>：「＋楼层」加层；选中房间可设入口/揭晓隐藏/删除；选中门可锁/开锁/删除。</p>
       <p><b>公开</b>：「一键公开」把房间展示给玩家。</p>
     </div>
@@ -242,6 +247,9 @@
   </div>
 </div>
 
+<!-- 地图右键部件弹出小菜单（删除） -->
+<div id="mapCtx" class="ctx-menu hidden"><button id="ctxDel" type="button">🗑 删除</button></div>
+
 <!-- 新建房间：确认 + 命名对话框 -->
 <div id="createDlg" class="overlay hidden">
   <div class="panel dlg-panel">
@@ -249,6 +257,20 @@
     <div class="dlg-body">
       <div class="dlg-row dim" id="createType">矩形房间</div>
       <div class="dlg-row dim" id="createSize">尺寸：3 × 3 格</div>
+      <div class="dlg-row">
+        <label class="dlg-label">设施类型</label>
+        <select id="createFac" class="dlg-select"></select>
+      </div>
+      <div class="dlg-row" id="createCustomRow" style="display:none">
+        <label class="dlg-label">自定义类型</label>
+        <div class="dlg-custom-in">
+          <input id="createCustomName" type="text" maxlength="10" placeholder="名称如 锅炉房" />
+          <input id="createCustomCode" type="text" maxlength="5" placeholder="缩写如 BOI" />
+          <input id="createCustomColor" type="color" value="#7fb0ff" title="房间底色" />
+          <button class="btn primary mini" id="createCustomAdd" type="button">添加</button>
+        </div>
+        <div class="dlg-clash" id="createCustomErr" style="display:none"></div>
+      </div>
       <div class="dlg-row">
         <label class="dlg-label">名称</label>
         <input id="createName" type="text" maxlength="20" placeholder="留空则用编号" autocomplete="off" />

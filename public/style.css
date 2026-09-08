@@ -1,3 +1,17 @@
+/* 地图右键部件弹出小菜单（删除） */
+.ctx-menu {
+  position: fixed; z-index: 80; min-width: 92px;
+  background: #0f2018; border: 1px solid #2f6b4c; border-radius: 8px;
+  padding: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+}
+.ctx-menu button {
+  display: block; width: 100%; text-align: left; padding: 7px 14px;
+  border: none; background: transparent; color: #eafff2; font-size: 13px;
+  border-radius: 6px; cursor: pointer; white-space: nowrap;
+}
+.ctx-menu button:hover { background: #1c3b2c; }
+.ctx-menu button:active { background: #244a37; }
+
 :root {
   --bg: #070b10;
   --panel: #1a2733;
@@ -219,6 +233,24 @@ button.mini.tool.active { border-color: var(--green); color: var(--green); backg
   border-radius: 8px; background: #07110b; cursor: crosshair; min-height: 0;
 }
 #mapCanvas { display: block; touch-action: none; }
+/* 绘图/门 工具的"游戏内准星"浮层：用 DOM 定位跟随指针，必可见(不依赖 canvas 重绘时序) */
+.map-aim { position: absolute; left: 0; top: 0; width: 26px; height: 26px; margin: -13px 0 0 -13px; pointer-events: none; z-index: 6; display: none; }
+.map-aim.show { display: block; }
+.map-aim::before, .map-aim::after { content: ''; position: absolute; background: rgba(255,214,110,0.96); box-shadow: 0 0 0 1px rgba(0,0,0,0.65); }
+.map-aim::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+.map-aim::after { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
+.map-aim .aim-dot { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: #fff; box-shadow: 0 0 4px rgba(0,0,0,0.8); }
+.map-aim .aim-coord { position: absolute; left: 16px; top: 14px; font: 11px system-ui, sans-serif; color: #ffd76a; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
+/* 地图下方设施图例(玩家/GM 对照) */
+.map-legend {
+  display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+  padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2);
+  font-size: 11px; color: var(--text); min-height: 30px;
+}
+.lg-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.lg-cap { color: var(--dim); font-size: 11px; margin-right: 4px; }
+.lg-code { font: bold 11px ui-monospace, Menlo, Consolas, monospace; color: #eafff2; letter-spacing: 0.5px; }
+.lg-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; box-shadow: 0 0 0 1px rgba(0,0,0,0.3); }
 #mapEntryBtn, #mapExploreBtn, #mapDel { white-space: nowrap; }
 button.mini:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -254,6 +286,11 @@ button.mini.amber:hover { border-color: var(--amber); color: #fff; background: r
   border-radius: 6px; padding: 8px 10px; font-family: inherit; font-size: 14px; outline: none;
 }
 .dlg-row input:focus { border-color: var(--green); }
+.dlg-select {
+  width: 100%; margin-top: 6px; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 6px; padding: 8px 10px; font-family: inherit; font-size: 14px; outline: none;
+}
+.dlg-select:focus { border-color: var(--green); }
 .dlg-label { color: var(--dim); font-size: 11px; }
 .dlg-clash { color: var(--red); font-size: 12px; background: rgba(255,107,107,0.10); border: 1px solid #5a2a2a; border-radius: 6px; padding: 8px 10px; }
 .dlg-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
@@ -261,3 +298,21 @@ button.mini.amber:hover { border-color: var(--amber); color: #fff; background: r
 .dlg-actions button.primary { border-color: var(--green); color: #07110b; background: var(--green); font-weight: bold; }
 .dlg-actions button.flat { color: var(--dim); }
 .dlg-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 房间列表（按楼层分组 + 打开/关闭） */
+.map-roomlist { max-height: 230px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 2px 0; }
+.rl-floor { font-size: 11px; color: #8fe6b8; letter-spacing: .08em; margin: 6px 0 2px; border-bottom: 1px dashed rgba(143,230,184,0.25); padding-bottom: 2px; }
+.rl-floor:first-child { margin-top: 0; }
+.room-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 3px 4px; border-radius: 4px; }
+.room-row:hover { background: rgba(143,230,184,0.08); }
+.room-row.sel { background: rgba(255,215,106,0.14); outline: 1px solid rgba(255,215,106,0.4); }
+.room-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; font-size: 12px; color: #d7ffdf; }
+.rl-code { display: inline-block; min-width: 26px; font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; color: #ffd76a; margin-right: 4px; }
+.room-acts { display: flex; gap: 3px; flex-shrink: 0; }
+.rbtn.on { background: #1f6f47; color: #eafff2; border-color: #2f9f63; }
+.rl-empty { padding: 8px 4px; font-size: 11px; }
+
+/* 自定义类型输入 */
+.dlg-custom-in { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dlg-custom-in input[type=text] { flex: 1; min-width: 90px; }
+.dlg-custom-in input[type=color] { width: 34px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--panel2); cursor: pointer; }
