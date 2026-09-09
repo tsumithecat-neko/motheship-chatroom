@@ -641,8 +641,8 @@ function charCardHTML(c) {
     + '<div class="cc-vital' + (stress >= 5 ? ' warn' : '') + '"><span class="k">STRESS</span><span class="v">' + stress + '</span><span class="cc-bar"><i style="width:' + Math.min(100, stress * 10) + '%"></i></span></div>'
     + '<div class="cc-vital' + (wounds > 0 ? ' warn' : '') + '"><span class="k">WOUNDS</span><span class="v">' + wounds + '</span><span class="cc-bar"><i style="width:' + Math.min(100, wounds * 10) + '%"></i></span></div>'
     + '</div>'
-    + '<div class="cc-sec">装备 / 物品</div>' + items
-    + '<div class="cc-sec">备注</div>' + notes + '</div>';
+    + '<div class="cc-sec">&gt; 装备·物品</div>' + items
+    + '<div class="cc-sec">&gt; 备注</div>' + notes + '</div>';
 }
 function openCharView(c) {
   const body = $('#charViewBody'); if (!body) return;
