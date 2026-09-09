@@ -246,7 +246,7 @@ function loadRooms() {
   fetch('/api/rooms?user=' + enc(user) + '&gm=' + enc(gmCode)).then((r) => r.json()).then((data) => {
     const wasGM = isGM;
     isGM = !!data.gm;
-    if (!isGM) { const _ls = document.getElementById('logState'); if (_ls) _ls.style.display = 'none'; }
+    if (!isGM) { const _ls = document.getElementById('logState'); if (_ls) _ls.style.display = 'none'; const _lw = document.getElementById('logWrap'); if (_lw) _lw.style.display = 'none'; }
     $('#gmBadge').classList.toggle('hidden', !isGM);
     $('#roomManageBtn').classList.toggle('hidden', !isGM);
     const list = data.rooms || [];
