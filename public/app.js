@@ -11,7 +11,8 @@ let viewRoom = 'general';      // what the user is currently viewing
 const roomMsgs = {};           // roomId -> [messages]
 let roomNames = {};            // roomId -> name
 let sendAs = 'player';          // 'player' | 'character' | 'scene'
-const _charCache = {};          // charId -> card object (用于渲染历史角色消息)
+const _charCache = {};
+let pendingImage, currentCardImage = '';          // charId -> card object (用于渲染历史角色消息)
 
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -480,8 +481,8 @@ function loadChars() {
       const rtag = (viewRoom === '__all__' && c.room && roomNames[c.room]) ? (' · ' + escapeHtml(roomNames[c.room])) : '';
       const inv = (c.items && c.items.length) ? ' · 🎒' + c.items.length : '';
       el.innerHTML = '<div class="nm">' + escapeHtml(c.name || c.owner) + '</div><div class="cl">' +
-        escapeHtml(c.cls || '') + ' · ' + escapeHtml(c.owner) + rtag + inv + '</div>';
-      el.addEventListener('click', () => fillForm(c));
+        escapeHtml(c.cls || '') + ' · ' + escapeHtml(c.owner) + rtag + inv + '</div>' + (c.image ? '<div class="cc-thumb"><img src="' + c.image + '" alt=""></div>' : '');
+      el.addEventListener('click', () => openCharView(c));
       wrap.appendChild(el);
     });
     const mine = list.find((c) => c.owner === user);
@@ -539,6 +540,9 @@ document.querySelectorAll('#sbmSeg button').forEach((b) => {
 });
 function fillForm(c) {
   $('#cOwner').value = c.owner || user;
+  currentCardImage = c.image || '';
+  pendingImage = undefined;
+  { const pr = $('#cImgPrev'); if (pr) pr.innerHTML = (c.image ? '<img src="' + c.image + '" alt="preview">' : '<span class="dim">（无头像）</span>'); }
   $('#cName').value = c.name || '';
   $('#cCls').value = c.cls || '';
   $('#cStr').value = c.str || ''; $('#cSpd').value = c.spd || '';
@@ -554,29 +558,103 @@ function fillForm(c) {
 function readImage(file) {
   return new Promise((resolve) => {
     if (!file) return resolve('');
+    if (!/^image\//.test(file.type)) { appendSystem('头像需为图片文件'); return resolve(''); }
     const fr = new FileReader();
-    fr.onload = () => resolve(fr.result);
     fr.onerror = () => resolve('');
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => resolve('');
+      img.onload = () => {
+        const tw = 480, th = 640, ar = tw / th;
+        let sw = img.width, sh = img.height, sx = 0, sy = 0;
+        if (sw / sh > ar) { const cw = sh * ar; sx = (sw - cw) / 2; sw = cw; }
+        else { const ch = sw / ar; sy = (sh - ch) / 2; sh = ch; }
+        const cv = document.createElement('canvas'); cv.width = tw; cv.height = th;
+        const cx = cv.getContext('2d'); cx.fillStyle = '#0a0f14'; cx.fillRect(0, 0, tw, th);
+        cx.drawImage(img, sx, sy, sw, sh, 0, 0, tw, th);
+        const sizes = [480, 400, 320], qs = [0.92, 0.82, 0.7];
+        for (const sz of sizes) for (const q of qs) {
+          const c2 = document.createElement('canvas'); c2.width = sz; c2.height = Math.round(sz * 4 / 3);
+          c2.getContext('2d').drawImage(cv, 0, 0, c2.width, c2.height);
+          const url = c2.toDataURL('image/jpeg', q);
+          if (url.length <= 500000) return resolve(url);
+        }
+        resolve(cv.toDataURL('image/jpeg', 0.7));
+      };
+      img.src = fr.result;
+    };
     fr.readAsDataURL(file);
   });
 }
 $('#charForm').addEventListener('submit', (e) => {
   e.preventDefault();
-  const file = $('#cImage').files[0];
-  readImage(file).then((img) => {
-    const saveRoom = (viewRoom === '__all__') ? 'general' : viewRoom;
-    const payload = {
-      owner: user, room: saveRoom, name: $('#cName').value, cls: $('#cCls').value,
-      str: $('#cStr').value, spd: $('#cSpd').value, int: $('#cInt').value, com: $('#cCom').value,
-      san: $('#cSan').value, fea: $('#cFea').value, bod: $('#cBod').value, arm: $('#cArm').value,
-      stress: $('#cStress').value, wounds: $('#cWounds').value, notes: $('#cNotes').value,
-      items: $('#cItems').value.split('\n').map((s) => s.trim()).filter(Boolean), image: img
-    };
-    fetch('/api/characters', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-    }).then(() => { appendSystem(user + ' 的角色卡已归档至「' + (roomNames[saveRoom] || saveRoom) + '」'); loadChars(); loadSideChar(); });
+  const image = (pendingImage !== undefined) ? pendingImage : (currentCardImage || '');
+  const saveRoom = (viewRoom === '__all__') ? 'general' : viewRoom;
+  const payload = {
+    owner: user, room: saveRoom, name: $('#cName').value, cls: $('#cCls').value,
+    str: $('#cStr').value, spd: $('#cSpd').value, int: $('#cInt').value, com: $('#cCom').value,
+    san: $('#cSan').value, fea: $('#cFea').value, bod: $('#cBod').value, arm: $('#cArm').value,
+    stress: $('#cStress').value, wounds: $('#cWounds').value, notes: $('#cNotes').value,
+    items: $('#cItems').value.split('\n').map((s) => s.trim()).filter(Boolean), image: image
+  };
+  fetch('/api/characters', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+  }).then(() => { pendingImage = undefined; appendSystem(user + ' 的角色卡已归档至「' + (roomNames[saveRoom] || saveRoom) + '」'); loadChars(); loadSideChar(); });
+});
+
+// ---- 头像预览 + 查看器（赛博风，只读；自己可编辑）----
+$('#cImage').addEventListener('change', () => {
+  const f = $('#cImage').files[0]; if (!f) return;
+  readImage(f).then((d) => {
+    pendingImage = d;
+    const pr = $('#cImgPrev'); if (pr) pr.innerHTML = d ? '<img src="' + d + '" alt="preview">' : '<span class="dim">（已清除）</span>';
   });
 });
+
+function avatarHTML(c) {
+  const inner = c.image
+    ? '<img src="' + c.image + '" alt="avatar">'
+    : '<div class="cc-noimg">NO<br>SIGNAL</div>';
+  return '<div class="cc-avatar"><div class="cc-ava-in">' + inner + '</div>'
+    + '<span class="cc-corner tl"></span><span class="cc-corner tr"></span>'
+    + '<span class="cc-corner bl"></span><span class="cc-corner br"></span>'
+    + '<span class="cc-scan"></span></div>';
+}
+function charCardHTML(c) {
+  const stats = STAT_KEYS.map(function (p) {
+    const raw = (c[p[1]] != null && c[p[1]] !== '') ? Number(c[p[1]]) || 0 : 0;
+    const pct = Math.max(0, Math.min(100, raw));
+    const v = (c[p[1]] != null && c[p[1]] !== '') ? escapeHtml(String(c[p[1]])) : '–';
+    return '<div class="cc-stat"><span class="k">' + p[0] + '</span><span class="v">' + v + '</span><span class="cc-bar"><i style="width:' + pct + '%"></i></span></div>';
+  }).join('');
+  const stress = Number(c.stress) || 0, wounds = Number(c.wounds) || 0;
+  const items = (c.items && c.items.length)
+    ? ('<ul class="cc-items">' + c.items.map((x) => '<li>' + escapeHtml(x) + '</li>').join('') + '</ul>')
+    : '<div class="cc-empty">无装备记录</div>';
+  const notes = c.notes ? ('<div class="cc-notes">' + escapeHtml(c.notes) + '</div>') : '<div class="cc-empty">无备注</div>';
+  return '<div class="cc-card">' + avatarHTML(c)
+    + '<div class="cc-head"><span class="cc-name">' + escapeHtml(c.name || c.owner) + '</span>'
+    + '<span class="cc-cls">' + escapeHtml(c.cls || '未设定职业') + '</span></div>'
+    + '<div class="cc-readout"><span>ID//' + escapeHtml(c.owner) + '</span><span>ROOM//' + escapeHtml(c.room || '-') + '</span></div>'
+    + '<div class="cc-stats">' + stats + '</div>'
+    + '<div class="cc-vitals">'
+    + '<div class="cc-vital' + (stress >= 5 ? ' warn' : '') + '"><span class="k">STRESS</span><span class="v">' + stress + '</span><span class="cc-bar"><i style="width:' + Math.min(100, stress * 10) + '%"></i></span></div>'
+    + '<div class="cc-vital' + (wounds > 0 ? ' warn' : '') + '"><span class="k">WOUNDS</span><span class="v">' + wounds + '</span><span class="cc-bar"><i style="width:' + Math.min(100, wounds * 10) + '%"></i></span></div>'
+    + '</div>'
+    + '<div class="cc-sec">装备 / 物品</div>' + items
+    + '<div class="cc-sec">备注</div>' + notes + '</div>';
+}
+function openCharView(c) {
+  const body = $('#charViewBody'); if (!body) return;
+  body.innerHTML = charCardHTML(c);
+  const eb = $('#charViewEdit');
+  if (eb) { eb.classList.toggle('hidden', c.owner !== user); eb.onclick = () => { closeCharView(); fillForm(c); }; }
+  $('#charViewModal').classList.remove('hidden');
+}
+function closeCharView() { const m = $('#charViewModal'); if (m) m.classList.add('hidden'); }
+$('#charViewClose').addEventListener('click', closeCharView);
+$('#charViewModal').addEventListener('click', (e) => { if (e.target === $('#charViewModal')) closeCharView(); });
+
 $('#charDelete').addEventListener('click', () => {
   if (!confirm('删除你在本频道的角色卡？')) return;
   const delRoom = (viewRoom === '__all__') ? 'general' : viewRoom;
@@ -601,25 +679,7 @@ function loadSideChar() {
 function renderSideChar(c) {
   const wrap = $('#sideChar'); if (!wrap) return;
   if (!c) { wrap.innerHTML = '<div class="side-empty">尚未建立角色卡<br><span style="font-size:11px">点右上角「编辑」创建</span></div>'; return; }
-  const stats = STAT_KEYS.map(function (p) {
-    const v = (c[p[1]] != null && c[p[1]] !== '') ? escapeHtml(String(c[p[1]])) : '–';
-    return '<div class="sc-stat"><span class="k">' + p[0] + '</span><span class="v">' + v + '</span></div>';
-  }).join('');
-  const stress = Number(c.stress) || 0, wounds = Number(c.wounds) || 0;
-  const items = (c.items && c.items.length)
-    ? ('<ul class="sc-items">' + c.items.map((s) => '<li>' + escapeHtml(s) + '</li>').join('') + '</ul>')
-    : '<div class="side-empty" style="padding:6px">无装备记录</div>';
-  const notes = c.notes ? ('<div class="sc-notes">' + escapeHtml(c.notes) + '</div>') : '<div class="side-empty" style="padding:6px">无备注</div>';
-  wrap.innerHTML =
-    '<div class="sc-head"><span class="sc-name">' + escapeHtml(c.name || c.owner) + '</span>' +
-    '<span class="sc-cls">' + escapeHtml(c.cls || '未设定职业') + '</span></div>' +
-    '<div class="sc-stats">' + stats + '</div>' +
-    '<div class="sc-vitals">' +
-      '<div class="sc-vital' + (stress >= 5 ? ' warn' : '') + '"><span class="k">STRESS</span><span class="v">' + stress + '</span></div>' +
-      '<div class="sc-vital' + (wounds > 0 ? ' warn' : '') + '"><span class="k">WOUNDS</span><span class="v">' + wounds + '</span></div>' +
-    '</div>' +
-    '<div class="sc-sec-t">装备 / 物品</div>' + items +
-    '<div class="sc-sec-t">备注</div>' + notes;
+  wrap.innerHTML = charCardHTML(c);
 }
 // 侧栏内容刷新（地图 + 角色），登录后与切换频道时调用
 function bootSide() {

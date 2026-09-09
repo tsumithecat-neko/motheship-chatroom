@@ -217,6 +217,8 @@
           <div class="row" data-page-node-id="W8YSfccBgj3DH4GsVOHrJW"><label data-page-node-id="Dkk2wIYtUXNbY9Z7SQiHLe">备注</label><textarea id="cNotes" maxlength="2000" rows="2"></textarea></div>
           <div class="row" data-page-node-id="eKP89VTRfE6OXDCNlodKDe"><label data-page-node-id="GHkJOYijM3QunTJLD4hkkl">装备/物品</label><textarea id="cItems" maxlength="2000" rows="4" placeholder="每行一项，例：&#10;脉冲步枪 x1&#10;急救包&#10;撬棍"></textarea></div>
           <div class="row" data-page-node-id="ud2d4HHC4J5sztzTe2CM8D"><label data-page-node-id="k7ptLHPiVd10nMzpGnrdZf">卡面图</label><input id="cImage" type="file" accept="image/*" data-page-node-id="fMaP8fUkUHe0x8ihN5IVyK" /></div>
+          <div class="row"><label>预览</label><div id="cImgPrev" class="img-prev"></div></div>
+          <div class="row"><span class="dim" style="font-size:11px">比例 3:4 · 单文件 ≤ 500KB（自动裁切压缩）</span></div>
           <div class="form-actions" data-page-node-id="QlydU8LZCpDEqCInd7lOC7">
             <button type="submit" data-page-node-id="HmpeM0ZIEzSQXVTCqrzUCE">保存我的卡</button>
             <button type="button" id="charDelete" class="danger hidden" data-page-node-id="DPZ7em7Cmo0rgpPgHgHo1g">删除</button>
@@ -438,8 +440,18 @@
   </div>
 </div>
 
-<script src="/app.js"></script>
-<script src="/map.js"></script>
+<div id="charViewModal" class="overlay hidden">
+  <div class="panel modal-card">
+    <div class="modal-head">
+      <div class="logo">角色卡 · 终端视图</div>
+      <button id="charViewClose">✕</button>
+    </div>
+    <div id="charViewBody"></div>
+    <div class="form-actions"><button type="button" id="charViewEdit" class="hidden">编辑我的卡</button></div>
+  </div>
+</div>
 
+<script src="/map.js"></script>
+<script src="/app.js"></script>
 </body>
 </html>
