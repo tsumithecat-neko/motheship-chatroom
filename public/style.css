@@ -106,17 +106,21 @@ button:hover { border-color: var(--green); color: #fff; }
   border-right: 1px solid var(--line); display: flex; flex-direction: column;
   padding: 12px 10px; gap: 8px; overflow-y: auto;
 }
-.rooms-head { color: var(--dim); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
-.room-list { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.rooms-head { color: var(--green); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; }
+.rooms-head::before { content: '> '; }
+.room-list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .room-item {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
-  padding: 9px 10px; border-radius: 6px; cursor: pointer; border: 1px solid transparent;
-  color: var(--text); font-size: 13px;
+  padding: 7px 8px 7px 4px; cursor: pointer; border: 0; border-left: 2px solid transparent;
+  color: var(--dim); font-size: 13px; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace;
 }
-.room-item:hover { background: var(--panel2); border-color: var(--line); }
-.room-item.active { background: var(--panel2); border-color: var(--green); color: var(--green); }
+.room-item::before { content: '› '; color: var(--dim); }
+.room-item:hover { background: var(--panel2); color: var(--text); }
+.room-item.active { background: rgba(180,210,235,.06); border-left-color: var(--green); color: var(--green); }
+.room-item.active::before { content: '▸ '; color: var(--green); }
 .room-item .lock { font-size: 12px; }
-.room-manage { margin-top: 6px; color: var(--amber); font-size: 12px; padding: 8px; }
+.room-manage { margin-top: 6px; color: var(--amber); font-size: 12px; padding: 8px; text-align: left; background: transparent; border: 1px solid var(--line); border-radius: 0; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; letter-spacing: 1px; }
+.room-manage:hover { border-color: var(--amber); color: var(--amber); }
 
 /* 左下角水印（作者署名 + 仓库链接） */
 .madeby {
@@ -465,7 +469,8 @@ button.mini.danger { color: var(--red); }
 
 /* quickbar */
 .quickbar { display: flex; gap: 8px; padding: 8px 16px 0; flex-wrap: wrap; }
-.quickbar button { padding: 6px 12px; font-size: 12px; color: var(--blue); }
+.quickbar button { padding: 6px 12px; font-size: 12px; color: var(--green); border: 1px solid var(--line); border-radius: 0; background: transparent; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; letter-spacing: 1px; }
+.quickbar button:hover { border-color: var(--green); background: rgba(180,210,235,.06); color: #fff; }
 
 /* sendbar */
 .sendbar { display: flex; gap: 8px; padding: 12px 16px 16px; align-items: center; }
