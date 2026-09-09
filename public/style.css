@@ -668,9 +668,243 @@ button.mini.amber:hover { border-color: var(--amber); color: #fff; background: r
 .lh-note code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#7CC4FF;}
 
 /* 终端风滚动条（块状复古质感：暗轨 + 白块滑块，无圆角，适配白色主色） */
-* { scrollbar-width: thin; scrollbar-color: #d8e6f3 rgba(6,10,14,.7); }
-*::-webkit-scrollbar { width: 10px; height: 10px; }
+* { scrollbar-width: thin; scrollbar-color: #d8e6f3 rgba(6,10,14,.7); }*::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-track { background: #0a0f14; border-left: 1px solid rgba(180,210,235,.14); }
 *::-webkit-scrollbar-thumb { background: #d8e6f3; border: 2px solid #0a0f14; border-radius: 0; box-shadow: inset 0 0 0 1px rgba(180,210,235,.6); }
 *::-webkit-scrollbar-thumb:hover { background: #ffffff; }
 *::-webkit-scrollbar-corner { background: #0a0f14; }
+
+/* =========================================================
+   手机版（通讯器）：底部标签栏切换 通讯 / 雷达 / 角色
+   触发：body.mobile  —— 由设置里的「界面模式」或手机自动判定
+   ========================================================= */
+
+/* 默认（桌面）隐藏所有手机版专属元素 */
+.mobile-tabs, .m-sheet, .m-chan, .mradar-fx, .m-exits { display: none; }
+
+/* ---- 登录页窄屏适配（与模式无关） ---- */
+@media (max-width: 560px) {
+  .login-card { width: auto; max-width: 88vw; padding: 24px 20px; }
+  .logo { font-size: 19px; letter-spacing: 2px; }
+}
+
+body.mobile {
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+body.mobile #app { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+
+/* ---- 顶栏：压成一条状态条 ---- */
+body.mobile .topbar {
+  gap: 8px; padding: 8px 12px; align-items: center;
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+body.mobile .brand { font-size: 13px; letter-spacing: 1px; }
+body.mobile .brand .dim { display: none; }
+body.mobile .readouts { display: none; }
+body.mobile .top-actions { display: none; }
+body.mobile .status { margin-left: 0; font-size: 11px; }
+body.mobile .status #whoami,
+body.mobile .status #roomName { display: none; }
+
+/* 频道胶囊（点开抽屉切频道） */
+.m-chan {
+  align-items: center; gap: 6px; margin-left: auto;
+  padding: 6px 12px; min-height: 34px;
+  background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 18px;
+  color: var(--text); font-size: 13px; cursor: pointer; font-family: inherit;
+}
+body.mobile .m-chan { display: inline-flex; }
+.m-chan .m-chev { color: var(--dim); font-size: 10px; }
+
+/* ---- 主体：单列，去掉左右栏 ---- */
+body.mobile .layout { flex-direction: column; }
+body.mobile .rooms { display: none; }
+body.mobile .main-col { flex: 1 1 auto; min-height: 0; }
+body.mobile .log { padding: 10px 12px 14px; }
+body.mobile .msg { max-width: 94%; font-size: 14px; padding: 10px 13px; }
+body.mobile .msg.msg-scene { max-width: 100%; }
+body.mobile .system { max-width: 100%; font-size: 11px; }
+body.mobile .dice { max-width: 100%; }
+
+/* ---- 输入区：拇指友好 ---- */
+body.mobile .quickbar {
+  padding: 6px 10px 0; gap: 6px; flex-wrap: nowrap;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+body.mobile .quickbar::-webkit-scrollbar { display: none; }
+body.mobile .quickbar button { flex: 0 0 auto; padding: 9px 14px; font-size: 13px; min-height: 40px; }
+body.mobile .quickbar #advMode { flex: 0 0 auto; min-height: 40px; }
+body.mobile .log-wrap { display: none !important; }         /* 手机版隐藏 GM 记录徽标 */
+body.mobile .quickbar #exportBtn { display: none; }
+
+body.mobile .sendbar-mode { padding: 6px 10px 0; }
+body.mobile .sbm-seg { flex: 1; }
+body.mobile .sbm-seg button { flex: 1; padding: 8px 6px; min-height: 38px; font-size: 13px; }
+body.mobile .sendbar { padding: 8px 10px; gap: 8px; }
+body.mobile #msgInput { font-size: 16px; padding: 10px 6px; }  /* 16px 防 iOS 聚焦缩放 */
+body.mobile .sendbar button[type="submit"] { min-height: 44px; padding: 10px 18px; flex: 0 0 auto; }
+
+/* ---- 底部标签栏 ---- */
+.mobile-tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 46;   /* 低于 .overlay(50)，弹窗能盖住它 */
+  height: calc(56px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #0d151d; border-top: 1px solid #22303d;
+}
+body.mobile .mobile-tabs { display: flex; }
+/* 未登录（登录浮层可见）时不显示标签栏 */
+body.mobile #login:not(.hidden) ~ .mobile-tabs { display: none; }
+.mobile-tabs .mt {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; background: transparent; border: 0; border-radius: 0;
+  color: #6d8296; padding: 8px 0; cursor: pointer; font-family: inherit;
+}
+.mobile-tabs .mt .mt-ico { font-size: 17px; line-height: 1; }
+.mobile-tabs .mt .mt-t { font-size: 10px; letter-spacing: 1px; }
+.mobile-tabs .mt.active { color: #ffffff; }
+.mobile-tabs .mt.active .mt-ico { text-shadow: 0 0 10px rgba(255,255,255,.75); }
+
+/* ---- 右栏变全屏视图：雷达 / 角色 ---- */
+body.mobile .sidepanel {
+  position: fixed; z-index: 40;   /* 低于 .overlay(50)，弹窗能盖住它 */
+  top: 0; bottom: calc(56px + env(safe-area-inset-bottom)); left: 0; right: 0;
+  width: auto; flex: none; display: none;
+  border-left: 0; background: #070b10;
+}
+body.mobile.tab-radar .sidepanel,
+body.mobile.tab-char .sidepanel { display: flex; }
+body.mobile .side-rail { display: none !important; }
+body.mobile .sidepanel.collapsed { width: auto; flex: none; }
+body.mobile .sidepanel.collapsed .side-inner { display: flex; }
+body.mobile .side-sec-h { padding: 10px 12px; padding-top: max(10px, env(safe-area-inset-top)); }
+body.mobile .side-sec-t { font-size: 11px; }
+body.mobile #sideCollapse { display: none; }   /* 手机版没有折叠态，标签栏负责切换 */
+
+body.mobile .side-sec-map { flex: 1 1 auto; min-height: 0; border-bottom: 0; }
+body.mobile.tab-radar .side-sec-char { display: none; }
+body.mobile.tab-char .side-sec-map { display: none; }
+body.mobile.tab-char .side-sec-char { flex: 1 1 auto; }
+body.mobile .side-map-wrap { flex: 1 1 auto; height: auto; min-height: 0; }
+body.mobile .side-map-foot { font-size: 12px; padding: 8px 12px; }
+body.mobile .side-char { padding: 12px; }
+
+/* ---- 雷达滤镜：叠在方形战术图上 ---- */
+body.mobile .mradar-fx {
+  display: block; position: absolute; inset: 0; z-index: 40;
+  pointer-events: none; overflow: hidden;
+}
+.mradar-sweep {
+  position: absolute; top: 50%; left: 50%;
+  width: 150vmin; height: 150vmin; margin: -75vmin 0 0 -75vmin;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    rgba(255,255,255,0.22) 0deg, rgba(255,255,255,0.10) 20deg,
+    rgba(255,255,255,0.03) 45deg, rgba(255,255,255,0) 70deg, rgba(255,255,255,0) 360deg);
+  animation: mradar-spin 3.8s linear infinite;
+}
+@keyframes mradar-spin { to { transform: rotate(360deg); } }
+.mradar-scan {
+  position: absolute; left: 0; right: 0; height: 2px; opacity: .75;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+  box-shadow: 0 0 12px rgba(255,255,255,.35);
+  animation: mradar-scanmove 4.4s linear infinite;
+}
+@keyframes mradar-scanmove { 0% { top: -2%; } 100% { top: 102%; } }
+.mradar-grid {
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 4px),
+    linear-gradient(90deg, transparent calc(50% - .5px), rgba(255,255,255,0.18) calc(50% - .5px), rgba(255,255,255,0.18) calc(50% + .5px), transparent calc(50% + .5px)),
+    linear-gradient(0deg,  transparent calc(50% - .5px), rgba(255,255,255,0.18) calc(50% - .5px), rgba(255,255,255,0.18) calc(50% + .5px), transparent calc(50% + .5px));
+}
+.mradar-noise {
+  position: absolute; inset: 0; mix-blend-mode: overlay;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px);
+}
+.mradar-compass { position: absolute; inset: 0; }
+.mradar-compass .mc {
+  position: absolute; font-style: normal; font-size: 9px; letter-spacing: 2px;
+  color: rgba(255,255,255,.55); text-shadow: 0 0 6px rgba(0,0,0,.8);
+}
+.mc-n { top: 14px; left: 50%; transform: translateX(-50%); }
+.mc-s { bottom: 14px; left: 50%; transform: translateX(-50%); }
+.mc-w { left: 12px; top: 50%; transform: translateY(-50%); }
+.mc-e { right: 12px; top: 50%; transform: translateY(-50%); }
+.mradar-corner {
+  position: absolute; font-size: 8px; letter-spacing: 1.5px;
+  color: rgba(255,255,255,.42); text-shadow: 0 0 6px rgba(0,0,0,.8);
+}
+.mradar-corner.mc-tl { top: 6px; left: 8px; }
+.mradar-corner.mc-tr { top: 6px; right: 8px; }
+.mradar-corner.mc-bl { bottom: 6px; left: 8px; }
+.mradar-corner.mc-br { bottom: 6px; right: 8px; }
+/* 雷达关闭时滤镜静止 */
+body.mobile .side-map-wrap.radaroff .mradar-fx { display: none; }
+
+/* ---- 手机版「可去」出口按钮 ---- */
+body.mobile .m-exits {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px;
+  border-top: 1px solid var(--line);
+}
+.m-exits .mx-t {
+  width: 100%; font-size: 9px; letter-spacing: 2px;
+  color: var(--dim); text-transform: uppercase;
+}
+.m-exit-btn {
+  padding: 8px 13px; min-height: 38px; font-size: 13px; font-family: inherit;
+  border: 1px solid var(--line); border-radius: 20px;
+  background: rgba(255,255,255,.04); color: var(--text); cursor: pointer;
+}
+.m-exit-btn.locked { color: #7c8b99; border-style: dashed; }
+.m-exit-btn:active { background: rgba(255,255,255,.14); }
+.m-exits .mx-empty { font-size: 12px; color: var(--dim); padding: 2px 0; }
+
+/* ---- 底部抽屉（频道 / 更多） ---- */
+.m-sheet { position: fixed; inset: 0; z-index: 90; }
+body.mobile .m-sheet:not(.hidden) { display: block; }
+body.mobile .m-sheet.hidden { display: none; }
+.m-sheet-mask { position: absolute; inset: 0; background: rgba(3,6,10,.72); }
+.m-sheet-body {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  max-height: 74vh; display: flex; flex-direction: column;
+  background: #0f1922; border-top: 1px solid #26333f;
+  border-radius: 14px 14px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: msheet-up .18s ease-out;
+}
+@keyframes msheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.m-sheet-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 8px; color: var(--green);
+  letter-spacing: 2px; font-size: 13px;
+}
+.m-sheet-bar button { background: transparent; border: 0; color: var(--dim); font-size: 18px; padding: 0 4px; }
+.m-sheet-list {
+  overflow-y: auto; padding: 4px 12px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ms-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 13px 14px; min-height: 48px; text-align: left;
+  background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 10px;
+  color: var(--text); font-size: 15px; cursor: pointer; font-family: inherit;
+}
+.ms-item .ms-ico { width: 22px; text-align: center; color: var(--dim); font-size: 16px; }
+.ms-item .ms-sub { margin-left: auto; font-size: 11px; color: var(--dim); }
+.ms-item.active { border-color: var(--green); color: var(--green); background: rgba(255,255,255,.07); }
+.ms-item.danger { color: var(--red); border-color: #5a2a2a; }
+.ms-sep { height: 1px; background: var(--line); margin: 8px 2px; }
+
+/* ---- 手机版：GM 专属控件一律不出现（船员视角） ---- */
+body.mobile .gm-only { display: none !important; }
+
+/* ---- 手机版弹窗：铺满窄屏 ---- */
+body.mobile .modal-card { width: auto; max-width: none; max-height: 86vh; margin: 0 10px; }
+body.mobile .modal-body { flex-direction: column; }
+body.mobile .char-list { width: auto; flex: 0 0 auto; max-height: 32vh; }
+body.mobile .room-admin-list { width: auto; flex: 0 0 auto; }
+body.mobile .row { flex-wrap: wrap; }
+body.mobile .row label { width: 58px; }
+body.mobile .grid4 { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+body.mobile .map-panel { width: auto; max-width: none; height: auto; max-height: 90vh; margin: 0 8px; }

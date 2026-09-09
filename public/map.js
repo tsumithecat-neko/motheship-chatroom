@@ -792,7 +792,10 @@ function render() {
    画完立刻还原，因此不会污染大地图弹窗的视图与编辑状态。            */
 function miniOn() {
   const p = M('#sidePanel');
-  return !!(p && !p.classList.contains('collapsed') && p.offsetParent !== null);
+  if (!p || p.classList.contains('collapsed')) return false;
+  // 手机版：侧栏是 position:fixed（offsetParent 恒为 null），改用标签类判断，只在雷达页绘制
+  if (document.body.classList.contains('mobile')) return document.body.classList.contains('tab-radar');
+  return p.offsetParent !== null;
 }
 function myZoneId() {
   const d = MS.data; if (!d) return null;
@@ -881,6 +884,48 @@ function renderMini() {
     if (nm) info.innerHTML = '你在 <b>' + escapeHtml(nm) + '</b> · ' + escapeHtml(String(floorTag)) + ' 层 · !go 房间名 移动';
     else if (bb) info.textContent = floorTag + ' 层 · 尚未进入船内（!here / !go 房间名）';
     else info.textContent = d.entryVisible ? '本层已开启入口 · 等待玩家进入' : '本层还没有已公开的区域，请 GM 在地图里「公开本层」';
+  }
+  // 手机版雷达：角落读数 + 「可去」出口按钮
+  updateMiniRadarReadout(floorTag);
+  if (window.renderMobileExits) window.renderMobileExits();
+}
+// 手机版雷达：当前所在房间的可去处（供底部「可去」按钮，点一下发 !go）
+window.mobileExits = function () {
+  const d = MS.data; if (!d) return [];
+  const mine = myZoneId(); if (!mine) return [];
+  const me = zoneAtFloor(d, mine); if (!me) return [];
+  const out = [];
+  // 玩家视角可见性：与小地图绘制口径一致（通道恒可见；房间需已揭晓，或入口可见开关打开时的入口）
+  const eid = d.entry, ev = !!d.entryVisible;
+  const seen = (z) => {
+    if (!z.shape) return true;
+    if (z.explored) return true;
+    return !!(ev && eid && z.id === eid);
+  };
+  const zones = (d.rooms || []).concat(d.passages || []);
+  for (const z of zones) {
+    if (z.id === mine) continue;
+    if (!seen(z)) continue;
+    const linked = touches(z, me) || !!doorBetween(mine, z.id);
+    if (!linked) continue;
+    const dr = doorBetween(mine, z.id);
+    out.push({
+      id: z.id,
+      name: zoneName(z) || '未命名区域',
+      locked: !!(dr && dr.locked),
+      stair: (z.floorId || 'F1') !== (me.floorId || 'F1')
+    });
+  }
+  return out;
+};
+// 手机版雷达：更新角落读数（楼层 / 扫描状态）
+function updateMiniRadarReadout(floorTag) {
+  const fl = M('#mRadarFloor'); if (fl) fl.textContent = String(floorTag || '-');
+  const sw = M('#mRadarSweepTxt');
+  if (sw) {
+    const on = MS.data ? (MS.data.radar !== false) : true;
+    sw.textContent = on ? '○ ACTIVE' : '× OFFLINE';
+    sw.style.color = on ? 'rgba(255,255,255,.42)' : 'rgba(255,140,90,.7)';
   }
 }
 // 供 app.js 在登录 / 切换频道时调用：丢弃旧数据重新拉当前频道的地图

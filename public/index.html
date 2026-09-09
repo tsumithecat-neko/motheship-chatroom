@@ -2,7 +2,10 @@
 <html lang="zh-CN" data-page-node-id="mVbPpqIe4E8eo07R2FMUHx">
 <head data-page-node-id="Sa5HPcMQ61ALD7vPiU54Tb">
 <meta charset="UTF-8" data-page-node-id="zsgqsBDxstTjE5TNh3b9IO" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="IgocyqHUHz7empYvoFB2MQ" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" data-page-node-id="IgocyqHUHz7empYvoFB2MQ" />
+<meta name="theme-color" content="#070b10" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>MOTHERSHIP // 通讯终端</title>
 <link rel="stylesheet" href="/style.css" data-page-node-id="u32ate3qDvBIDH52NfPb5F" />
 </head>
@@ -43,6 +46,7 @@
     <section class="main-col" data-page-node-id="n9fg2FpY4P3hQV1twl8OYj">
       <header class="topbar" data-page-node-id="HElEXd4jap1UEjAZuR9VxK">
         <div class="brand" data-page-node-id="DrCNhU1HA12cn7nWf18ZCM">◈ MOTHERSHIP <span class="dim" data-page-node-id="VP2LKpLx3zDhS5nQiXXFPV">// 通讯终端</span></div>
+        <button type="button" id="mChanBtn" class="m-chan"><span id="mChanName">主频道</span><span class="m-chev">▾</span></button>
         <div class="readouts" data-page-node-id="roWrap000">
           <span class="ro ro-clock" data-page-node-id="roClock00"><b id="roClock" data-page-node-id="roClock0b">--:--:--</b></span>
           <span class="ro" data-page-node-id="roLat0000"><span class="rk" data-page-node-id="roLat00k">LINK</span><b id="roLat" data-page-node-id="roLat00v">--</b></span>
@@ -159,8 +163,23 @@
               <div class="rfx-corner rfx-c3" id="radarFxTime">T+ 00:00:00</div>
               <div class="rfx-corner rfx-c4">SRC · GM-LINK</div>
             </div>
+            <!-- 手机版雷达滤镜：叠在方形战术图上，营造导航雷达感 -->
+            <div id="mRadarFx" class="mradar-fx">
+              <div class="mradar-sweep"></div>
+              <div class="mradar-scan"></div>
+              <div class="mradar-grid"></div>
+              <div class="mradar-noise"></div>
+              <div class="mradar-compass">
+                <i class="mc mc-n">N</i><i class="mc mc-e">E</i><i class="mc mc-s">S</i><i class="mc mc-w">W</i>
+              </div>
+              <div class="mradar-corner mc-tl">SCAN</div>
+              <div class="mradar-corner mc-tr" id="mRadarFloor">F1</div>
+              <div class="mradar-corner mc-bl">RADAR</div>
+              <div class="mradar-corner mc-br" id="mRadarSweepTxt">○ ACTIVE</div>
+            </div>
           </div>
           <div class="side-map-foot" id="miniMapInfo">等待地图数据…</div>
+          <div class="m-exits" id="miniMapExits"></div>
           <div class="side-radar-bar gm-only" id="sideRadarBar">
             <span class="sr-label">雷达</span>
             <button class="mini" id="radarOnBtn" data-v="1">开启</button>
@@ -437,6 +456,21 @@
       </div>
 
       <hr class="settings-sep" />
+      <div class="sub">界面模式</div>
+      <div class="row">
+        <label>显示</label>
+        <select id="setViewMode">
+          <option value="auto">自动（手机默认手机版）</option>
+          <option value="desktop">桌面版</option>
+          <option value="mobile">手机版</option>
+        </select>
+      </div>
+      <p class="dim" style="font-size: 12px; margin: 0 0 12px;">手机版是船员视角的通讯器界面：底部标签切换「通讯 / 雷达 / 角色」，地图带雷达滤镜。</p>
+      <div class="form-actions">
+        <button type="button" id="applyViewBtn">应用</button>
+      </div>
+
+      <hr class="settings-sep" />
       <div class="sub" data-page-node-id="setSubL00">日志</div>
       <p class="dim" data-page-node-id="setNote00" style="font-size: 12px; margin: 0 0 12px;">清除只影响你本端显示，不改动服务器与其他人的记录；重新连接后会再次载入最近消息。</p>
       <div class="form-actions" data-page-node-id="setActL00">
@@ -455,6 +489,23 @@
     </div>
     <div id="charViewBody"></div>
     <div class="form-actions"><button type="button" id="charViewEdit" class="hidden">编辑我的卡</button></div>
+  </div>
+</div>
+
+<!-- 手机版：底部标签栏（通讯 / 雷达 / 角色 / 更多） -->
+<nav id="mobileTabs" class="mobile-tabs" aria-label="手机版导航">
+  <button type="button" class="mt active" data-tab="chat"><span class="mt-ico">◈</span><span class="mt-t">通讯</span></button>
+  <button type="button" class="mt" data-tab="radar"><span class="mt-ico">◎</span><span class="mt-t">雷达</span></button>
+  <button type="button" class="mt" data-tab="char"><span class="mt-ico">▣</span><span class="mt-t">角色</span></button>
+  <button type="button" class="mt" data-tab="more"><span class="mt-ico">≡</span><span class="mt-t">更多</span></button>
+</nav>
+
+<!-- 手机版：底部抽屉（频道 / 更多菜单） -->
+<div id="mSheet" class="m-sheet hidden">
+  <div class="m-sheet-mask" id="mSheetMask"></div>
+  <div class="m-sheet-body">
+    <div class="m-sheet-bar"><span id="mSheetTitle">更多</span><button type="button" id="mSheetClose">✕</button></div>
+    <div class="m-sheet-list" id="mSheetList"></div>
   </div>
 </div>
 

@@ -186,6 +186,7 @@ function renderView() {
     else if (m.type === 'dice') appendDice(m);
   }
   $('#roomName').textContent = (viewRoom === '__all__' ? '全部频道' : (roomNames[viewRoom] || viewRoom));
+  updateMobileChan();
 }
 
 function send(text) {
@@ -254,6 +255,7 @@ function loadRooms() {
     roomNames = {};
     list.forEach((r) => { roomNames[r.id] = r.name; });
     renderRooms(list);
+    updateMobileChan();
     // if we just learned we're GM, reconnect to receive all channels
     if (isGM && !wasGM) { if (viewRoom === 'general') { /* keep */ } connectSSE(); }
   }).catch(() => {});
@@ -285,6 +287,7 @@ function switchRoom(id) {
   if (window.closeMap) closeMap();
   document.querySelectorAll('.room-item').forEach((el) => el.classList.toggle('active', el.dataset.id === id));
   $('#roomName').textContent = (id === '__all__' ? '全部频道' : (roomNames[id] || id));
+  updateMobileChan();
   if (!isGM) { connectSSE(); }   // non-GM must reconnect to new room
   else { renderView(); }          // GM already has all messages cached
   if (!$('#charModal').classList.contains('hidden')) loadChars();
@@ -305,6 +308,7 @@ function connect() {
   loadRooms();
   bootSide();                     // 右栏：甲板图 + 角色信息
   refreshSendbarMode();
+  applyViewMode();                // 按设备 / 偏好切桌面 / 手机版
 }
 
 // ---- login ----
@@ -386,8 +390,155 @@ function exportLog() {
 }
 $('#exportBtn').addEventListener('click', exportLog);
 
+// ================= 界面模式：auto / desktop / mobile =================
+// 手机版 = 船员视角的通讯器：底部标签切换「通讯 / 雷达 / 角色」，地图带雷达滤镜。
+// GM 专属控件在手机版一律隐藏（.gm-only），编辑地图请回桌面版。
+const VIEW_KEY = 'mothership_view';
+function isMobileDevice() {
+  const ua = navigator.userAgent || '';
+  const touch = (navigator.maxTouchPoints || 0) > 1;
+  let narrow = false;
+  try { narrow = !!(window.matchMedia && window.matchMedia('(max-width: 820px)').matches); } catch (e) {}
+  const mobileUA = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Windows Phone|BlackBerry/i.test(ua);
+  return !!((mobileUA && (touch || narrow)) || (touch && narrow));
+}
+let viewPref = 'auto';
+try { viewPref = localStorage.getItem(VIEW_KEY) || 'auto'; } catch (e) {}
+function isMobileView() {
+  if (viewPref === 'mobile') return true;
+  if (viewPref === 'desktop') return false;
+  return isMobileDevice();
+}
+
+let curTab = 'chat';
+function updateMobileChan() {
+  const el = $('#mChanName'); if (!el) return;
+  el.textContent = (viewRoom === '__all__' ? '全部频道' : (roomNames[viewRoom] || '主频道'));
+}
+function setMobileTab(tab) {
+  curTab = tab || 'chat';
+  document.body.classList.remove('tab-radar', 'tab-char');
+  if (curTab === 'radar') document.body.classList.add('tab-radar');
+  if (curTab === 'char') document.body.classList.add('tab-char');
+  document.querySelectorAll('#mobileTabs .mt').forEach((b) => b.classList.toggle('active', b.dataset.tab === curTab));
+  if (curTab === 'radar' && typeof renderMini === 'function') setTimeout(renderMini, 40);
+  if (curTab === 'char') loadSideChar();
+}
+function applyViewMode() {
+  const m = isMobileView();
+  document.body.classList.toggle('mobile', m);
+  const sel = $('#setViewMode'); if (sel) sel.value = viewPref;
+  if (m) {
+    const p = $('#sidePanel'); if (p) p.classList.remove('collapsed');
+    setMobileTab(curTab);
+    updateMobileChan();
+    if (window.renderMobileExits) window.renderMobileExits();
+  } else {
+    document.body.classList.remove('tab-radar', 'tab-char');
+  }
+  if (typeof renderMini === 'function') setTimeout(renderMini, 90);
+}
+function applyViewPref(v) {
+  viewPref = v || 'auto';
+  try { localStorage.setItem(VIEW_KEY, viewPref); } catch (e) {}
+  applyViewMode();
+}
+
+// 底部标签栏
+document.querySelectorAll('#mobileTabs .mt').forEach((b) => {
+  b.addEventListener('click', () => {
+    const t = b.dataset.tab;
+    if (t === 'more') { openSheet('more'); return; }   // 「更多」不改变当前标签
+    setMobileTab(t);
+  });
+});
+
+// ---- 底部抽屉（频道列表 / 更多菜单） ----
+function closeSheet() { const sh = $('#mSheet'); if (sh) sh.classList.add('hidden'); }
+function sheetItem(ico, txt, sub, cls, fn) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'ms-item' + (cls ? ' ' + cls : '');
+  b.innerHTML = '<span class="ms-ico">' + ico + '</span><span>' + escapeHtml(txt) + '</span>' +
+    (sub ? '<span class="ms-sub">' + escapeHtml(sub) + '</span>' : '');
+  b.addEventListener('click', fn);
+  return b;
+}
+function openSheet(kind) {
+  const sh = $('#mSheet'), list = $('#mSheetList'), title = $('#mSheetTitle');
+  if (!sh || !list) return;
+  list.innerHTML = '';
+  if (kind === 'chan') {
+    if (title) title.textContent = '切换频道';
+    fetch('/api/rooms?user=' + enc(user) + '&gm=' + enc(gmCode)).then((r) => r.json()).then((data) => {
+      const rooms = data.rooms || [];
+      if (!rooms.length) {
+        const d = document.createElement('div'); d.className = 'mx-empty'; d.textContent = '暂无可用频道';
+        list.appendChild(d); return;
+      }
+      rooms.forEach((r) => {
+        list.appendChild(sheetItem('›', r.name, r.id === viewRoom ? '当前' : '',
+          r.id === viewRoom ? 'active' : '', () => { closeSheet(); switchRoom(r.id); }));
+      });
+    }).catch(() => {});
+  } else {
+    if (title) title.textContent = '更多';
+    list.appendChild(sheetItem('≡', '切换频道', '', '', () => openSheet('chan')));
+    list.appendChild(sheetItem('▣', '角色卡档案', '', '', () => { closeSheet(); openChars(); }));
+    list.appendChild(sheetItem('?', '指令手册', '', '', () => { closeSheet(); showHelpInChat(); }));
+    list.appendChild(sheetItem('⚙', '设置', '', '', () => { closeSheet(); openSettings(); }));
+    const sep = document.createElement('div'); sep.className = 'ms-sep'; list.appendChild(sep);
+    list.appendChild(sheetItem('⏏', '登出', '', 'danger', () => {
+      closeSheet(); const b = $('#logoutBtn'); if (b) b.click();
+    }));
+  }
+  sh.classList.remove('hidden');
+}
+{
+  const a = $('#mChanBtn'); if (a) a.addEventListener('click', () => openSheet('chan'));
+  const b = $('#mSheetClose'); if (b) b.addEventListener('click', closeSheet);
+  const c = $('#mSheetMask'); if (c) c.addEventListener('click', closeSheet);
+}
+
+// ---- 手机版雷达：底部「可去」快捷按钮 ----
+window.renderMobileExits = function () {
+  const wrap = $('#miniMapExits'); if (!wrap) return;
+  if (typeof window.mobileExits !== 'function') return;
+  const list = window.mobileExits() || [];
+  wrap.innerHTML = '';
+  const t = document.createElement('span'); t.className = 'mx-t'; t.textContent = '可去'; wrap.appendChild(t);
+  if (!list.length) {
+    const e = document.createElement('span'); e.className = 'mx-empty';
+    e.textContent = '附近没有已探明的通路（!here 查看）';
+    wrap.appendChild(e);
+    return;
+  }
+  list.forEach((x) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'm-exit-btn' + (x.locked ? ' locked' : '');
+    b.textContent = (x.stair ? '↕ ' : '') + x.name + (x.locked ? ' 🔒' : '');
+    b.addEventListener('click', () => {
+      closeSheet();
+      send('!go ' + x.name);
+    });
+    wrap.appendChild(b);
+  });
+};
+
+// 视口变化（旋转 / 分屏）时，自动模式重新判定
+let _viewTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_viewTimer);
+  _viewTimer = setTimeout(() => { if (viewPref === 'auto') applyViewMode(); }, 220);
+});
+
 // ---- settings ----
-function openSettings() { $('#setName').value = user; $('#settingsModal').classList.remove('hidden'); }
+function openSettings() {
+  $('#setName').value = user;
+  const sel = $('#setViewMode'); if (sel) sel.value = viewPref;
+  $('#settingsModal').classList.remove('hidden');
+}
 function closeSettings() { $('#settingsModal').classList.add('hidden'); }
 $('#settingsBtn').addEventListener('click', openSettings);
 $('#settingsClose').addEventListener('click', closeSettings);
@@ -412,6 +563,10 @@ $('#clearLogBtn').addEventListener('click', () => {
   });
 });
 $('#exportLogBtn2').addEventListener('click', () => { closeSettings(); exportLog(); });
+
+// 界面模式：选完即切，并记在本机
+$('#setViewMode').addEventListener('change', () => applyViewPref($('#setViewMode').value));
+$('#applyViewBtn').addEventListener('click', () => applyViewPref($('#setViewMode').value));
 
 // ---- 终端读数（顶栏）：时钟 + 真实状态（延迟/运行时长/在线/今日消息） ----
 function pad2(n) { return String(n).padStart(2, '0'); }
@@ -455,6 +610,13 @@ USAGE    !<command> [args]   （GM 可 !go / @呼号 代投）
   help    !help                       显示本手册
 
 记录由 GM 用 !log 控制：start / end / on / off / status`;
+// 手机版：手册要显示在通讯页里，所以先切回聊天标签再追加
+function showHelpInChat() {
+  if (document.body.classList.contains('mobile')) setMobileTab('chat');
+  appendSystem(HELP_TEXT, 'help');
+  scroll();
+  setTimeout(scroll, 60);
+}
 $('#helpBtn').addEventListener('click', () => {
   appendSystem(HELP_TEXT, 'help');
   scroll();
@@ -822,6 +984,7 @@ setupLogHelp();
 // restore + 自动登录（记住登录状态）
 $('#nameInput').value = localStorage.getItem('mothership_user') || '';
 $('#gmInput').value = localStorage.getItem('mothership_gm') || '';
+applyViewMode();                       // 登录前也先把界面模式套上（手机默认手机版）
 if (($('#nameInput').value || '').trim()) connect();
 
 // ---- logout ----
