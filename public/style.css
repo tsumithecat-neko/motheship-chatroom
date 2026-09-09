@@ -413,6 +413,8 @@ button.mini.danger { color: var(--red); }
 #toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(20px); background: var(--panel2); border: 1px solid var(--cyan); color: var(--cyan); padding: 10px 16px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 50; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .system { align-self: center; color: #aebfce; font-size: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; font-style: italic; }
+/* 终端风指令帮助块：等宽、保留换行、左对齐、绿字暗底 */
+.system.sys-help { align-self: center; max-width: 94%; text-align: left; font-style: normal; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; font-size: 12px; line-height: 1.55; white-space: pre-wrap; color: #7cffb2; background: rgba(4,12,9,.72); border: 1px solid rgba(124,255,178,.35); border-radius: 6px; padding: 10px 14px; text-shadow: 0 0 6px rgba(124,255,178,.25); }
 
 /* 角色消息：左色条 = 角色 hash hue，发送者署名带职业小字 */
 .msg.msg-char { border-left-color: var(--char-hue, var(--blue)); }
@@ -632,9 +634,10 @@ button.mini.amber:hover { border-color: var(--amber); color: #fff; background: r
 .lh-note{margin:8px 0 0;color:#8aa0b6;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;}
 .lh-note code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#7CC4FF;}
 
-/* 终端风滚动条（细、方块状、暗轨 + 终端绿滑块） */
-* { scrollbar-width: thin; scrollbar-color: #2f6b4f rgba(8,12,17,.6); }
-*::-webkit-scrollbar { width: 9px; height: 9px; }
-*::-webkit-scrollbar-track { background: rgba(8,12,17,.55); border-radius: 0; }
-*::-webkit-scrollbar-thumb { background: #2f6b4f; border-radius: 0; box-shadow: inset 0 0 0 1px rgba(124,255,178,.4), 0 0 4px rgba(124,255,178,.18); }
+/* 终端风滚动条（块状复古质感：暗轨 + 绿块滑块，无圆角） */
+* { scrollbar-width: thin; scrollbar-color: #2f8f63 rgba(6,10,14,.7); }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: #0a0f14; border-left: 1px solid rgba(124,255,178,.12); }
+*::-webkit-scrollbar-thumb { background: #2f8f63; border: 2px solid #0a0f14; border-radius: 0; box-shadow: inset 0 0 0 1px rgba(124,255,178,.45); }
 *::-webkit-scrollbar-thumb:hover { background: #3da06b; }
+*::-webkit-scrollbar-corner { background: #0a0f14; }

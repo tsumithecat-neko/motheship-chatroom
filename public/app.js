@@ -19,9 +19,9 @@ function escapeHtml(s) {
 function enc(s) { return encodeURIComponent(s || ''); }
 function scroll() { logEl.scrollTop = logEl.scrollHeight; }
 
-function appendSystem(text) {
+function appendSystem(text, kind) {
   const d = document.createElement('div');
-  d.className = 'system';
+  d.className = 'system' + (kind === 'help' ? ' sys-help' : '');
   d.textContent = text;
   logEl.appendChild(d);
   scroll();
@@ -170,7 +170,7 @@ function handleEvent(m) {
   (roomMsgs[m.room] = roomMsgs[m.room] || []).push(m);
   const show = (isGM && viewRoom === '__all__') || m.room === viewRoom;
   if (show) {
-    if (m.type === 'system') appendSystem(m.text);
+    if (m.type === 'system') appendSystem(m.text, m.kind);
     else if (m.type === 'msg') appendMsg(m);
     else if (m.type === 'dice') appendDice(m);
   }
@@ -180,7 +180,7 @@ function renderView() {
   logEl.innerHTML = '';
   const list = roomMsgs[viewRoom] || [];
   for (const m of list) {
-    if (m.type === 'system') appendSystem(m.text);
+    if (m.type === 'system') appendSystem(m.text, m.kind);
     else if (m.type === 'msg') appendMsg(m);
     else if (m.type === 'dice') appendDice(m);
   }
@@ -440,8 +440,22 @@ pollStatus(); setInterval(pollStatus, 5000);
 
 
 // ---- help ----
+const HELP_TEXT = `MOTHERSHIP CHAT · 指令手册
+USAGE    !<command> [args]   （GM 可 !go / @呼号 代投）
+
+  roll    !roll <dice> [adv|dis]     掷骰，例 !roll 2d10+5
+  d100    !d100                       百分骰
+  d20     !d20                        d20 骰
+  check   !check <n> [adv|dis]        对抗检定 (d100 ≤ n)
+  stress  !stress [n]                 显示 / 设置 Stress
+  panic   !panic [adv|dis]            触发 d20 恐慌表（按职业读创伤反应）
+  go      !go <房间名>                沿地图通道移动
+  here    !here                       当前所在与可去之处
+  help    !help                       显示本手册
+
+记录由 GM 用 !log 控制：start / end / on / off / status`;
 $('#helpBtn').addEventListener('click', () => {
-  appendSystem('指令 → !roll 2d10+5 [adv|dis] · !d100 · !d20 · !check 55 [adv|dis] · !stress [n] · !panic [adv|dis] · !help ｜ 切换房间看左侧，GM 可见全部');
+  appendSystem(HELP_TEXT, 'help');
   scroll();
 });
 

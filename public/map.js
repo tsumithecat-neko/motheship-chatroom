@@ -1612,11 +1612,11 @@ document.querySelectorAll('button.tool').forEach((b) => {
     if (isDrawTool() || MS.tool === 'door') { if (MS.lastPtr) { const lg = toLog(MS.lastPtr); MS.aim = { x: Math.round(lg.x), y: Math.round(lg.y) }; } }
     else MS.aim = null;
     render();
-    if (MS.tool === 'rect') tip('移动鼠标，画内准星会吸到整数格点；在想要的角按住拖出矩形房间');
-    else if (MS.tool === 'poly') tip('多边形房间：依次点击放置顶点(吸附格点)，点回首点闭合；Enter 也可闭合，Esc 取消');
-    else if (MS.tool === 'passage') tip('拖出通道（走廊）。伸到房间/通道旁 1 格内即连通；绿框=已连通');
-    else if (MS.tool === 'door') tip('点两个相邻(贴边即算)的对象放一扇门；若两处在不同楼层则自动成“梯”。可再点选门后锁/开锁');
-    else if (MS.tool === 'select') tip('点选房间/通道/门；门可锁/开锁/删除；右键点房间可设入口，右键拖拽平移');
+    if (MS.tool === 'rect') tip('按住拖出矩形房间；准星自动吸格点');
+    else if (MS.tool === 'poly') tip('依次点击放顶点(吸附格点)，点首点闭合；Enter 闭合 / Esc 取消');
+    else if (MS.tool === 'passage') tip('拖出通道，伸到房间/通道 1 格内即连通（绿框=已连通）');
+    else if (MS.tool === 'door') tip('点两个相邻(贴边即算)对象放门；跨层自动成“梯”，可锁/开锁');
+    else if (MS.tool === 'select') tip('点选房间/通道/门；门可锁/开锁，右键房间设入口/拖拽平移');
     else tip('');
   });
 });

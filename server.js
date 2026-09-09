@@ -467,7 +467,7 @@ function addMessage(roomId, obj) {
   broadcast(roomId, obj);
 }
 
-// 记录控制（GM 专用，骰娘风格）：start/end 为整段记录的生命周期，on/off 为中途继续/暂停。
+// 记录控制（GM 专用）：start/end 为整段记录的生命周期，on/off 为中途继续/暂停。
 function handleLogCommand(room, roomObj, gm, text) {
   if (!isGM(gm)) {
     addMessage(room, { type: 'system', text: '【记录】只有 GM 可控制记录。', noLog: true });
@@ -574,7 +574,7 @@ function parseDice(text, user, room, gm) {
   if (tm) {
     cmd = cmd.slice(0, tm.index).trim();
     if (isGM(gm)) { user = tm[1]; proxy = true; }
-    else return { type: 'system', text: '只有 GM 可代投他人骰子（' + roller + '）' };
+    else return { type: 'system', text: '只有 GM 可代投他人骰子（' + roller + '）', noLog: true };
   }
 
   // 从当前房间(回退 general)角色卡读取职业，用于 Trauma Response（按被代投者）
@@ -582,7 +582,7 @@ function parseDice(text, user, room, gm) {
   const userCls = card ? (card.cls || '') : '';
 
   if (/^(help|\?)$/i.test(cmd)) {
-    return { type: 'system', text: '指令 → !roll 2d10+5 [adv|dis] · !d100 · !check 55 [adv|dis] · !stress [n] · !panic [adv|dis] · !go 房间名 · !here · !help ｜ !go 沿地图通道移动到房间，!here 看当前所在与可去之处；!panic 触发母舰 d20 恐慌表并读取你本频道角色卡职业的创伤反应' };
+    return { type: 'system', kind: 'help', text: 'MOTHERSHIP CHAT · 指令手册\nUSAGE    !<command> [args]   （GM 可 !go / @呼号 代投）\n\n  roll    !roll <dice> [adv|dis]     掷骰，例 !roll 2d10+5\n  d100    !d100                       百分骰\n  d20     !d20                        d20 骰\n  check   !check <n> [adv|dis]        对抗检定 (d100 ≤ n)\n  stress  !stress [n]                 显示 / 设置 Stress\n  panic   !panic [adv|dis]            触发 d20 恐慌表（按职业读创伤反应）\n  go      !go <房间名>                沿地图通道移动\n  here    !here                       当前所在与可去之处\n  help    !help                       显示本手册\n\n记录由 GM 用 !log 控制：start / end / on / off / status', noLog: true };
   }
 
   // 地图移动：!go 房间名 / !here
@@ -594,10 +594,10 @@ function parseDice(text, user, room, gm) {
       broadcast(room, { type: 'map', room, v: mapVer[room] });
       return { type: 'msg', user, text: rr.msg + (rr.revealed ? '（首次进入，房间已被你揭示）' : '') };
     }
-    return { type: 'system', text: rr.msg };
+    return { type: 'system', text: rr.msg, noLog: true };
   }
   if (/^here$/i.test(cmd)) {
-    return { type: 'system', text: here(room || 'general', user) };
+    return { type: 'system', text: here(room || 'general', user), noLog: true };
   }
 
   let m = cmd.match(/^stress\s*(\d+)?$/i);
@@ -642,7 +642,7 @@ function parseDice(text, user, room, gm) {
   if (m) {
     const expr = m[1].replace(/\s+/g, '').toLowerCase();
     const a = rollPool(expr);
-    if (!a.ok) return { type: 'system', text: '骰子语法错误，例: !roll 2d10+5 [adv|dis]' };
+    if (!a.ok) return { type: 'system', text: '骰子语法错误，例: !roll 2d10+5 [adv|dis]', noLog: true };
     if (adv || dis) {
       const b = rollPool(expr);
       const chosen = adv ? (a.total >= b.total ? a : b) : (a.total <= b.total ? a : b);
@@ -664,7 +664,7 @@ function parseDice(text, user, room, gm) {
     return { type: 'dice', user, sub: 'roll', proxy, proxyBy: roller, formula: 'd' + sides, rolls: [d1], total: d1 };
   }
 
-  return { type: 'system', text: '未知指令，输入 !help 查看。' };
+  return { type: 'system', text: '未知指令，输入 !help 查看。', noLog: true };
 }
 
 const MIME = {
