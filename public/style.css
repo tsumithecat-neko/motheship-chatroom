@@ -433,7 +433,8 @@ button.mini.danger { color: var(--red); }
 .msg.mentioned { border-left-color: var(--cyan); background: rgba(120, 220, 255, 0.08); box-shadow: 0 0 0 1px rgba(120, 220, 255, 0.25); }
 #toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(20px); background: var(--panel2); border: 1px solid var(--cyan); color: var(--cyan); padding: 10px 16px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 50; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.system { align-self: center; color: #aebfce; font-size: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; font-style: italic; }
+.system { align-self: center; max-width: 94%; text-align: left; color: var(--dim); font-size: 12px; background: rgba(255,255,255,0.03); border: 0; border-left: 2px solid var(--green); border-radius: 0; padding: 3px 10px; font-style: normal; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; letter-spacing: .3px; }
+.system:not(.sys-help)::before { content: '› '; color: var(--green); }
 /* 终端风指令帮助块：等宽、保留换行、左对齐、白字暗底 */
 .system.sys-help { align-self: center; max-width: 94%; text-align: left; font-style: normal; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; font-size: 12px; line-height: 1.55; white-space: pre-wrap; color: #eaf3fa; background: rgba(4,12,9,.72); border: 1px solid rgba(180,210,235,.35); border-radius: 6px; padding: 10px 14px; text-shadow: 0 0 6px rgba(180,210,235,.25); }
 
