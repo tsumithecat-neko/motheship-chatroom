@@ -620,32 +620,31 @@ function avatarHTML(c) {
     + '<span class="cc-corner bl"></span><span class="cc-corner br"></span>'
     + '<span class="cc-scan"></span></div>';
 }
-// 终端风字符进度条：满格 █ / 空格 ░
-function ccMeter(pct, n) {
-  n = n || 10;
-  const f = Math.max(0, Math.min(n, Math.round(((pct || 0) / 100) * n)));
+// 终端风字符进度条：满格 █ / 空格 ░（value/max 取比例，n 格）
+function ccMeter(value, max, n) {
+  n = n || 10; max = max || 10;
+  const f = Math.max(0, Math.min(n, Math.round(((value || 0) / max) * n)));
   return '<span class="cc-meter"><b>' + '█'.repeat(f) + '</b>' + '░'.repeat(n - f) + '</span>';
 }
 function charCardHTML(c) {
   const stats = STAT_KEYS.map(function (p) {
     const raw = (c[p[1]] != null && c[p[1]] !== '') ? Number(c[p[1]]) || 0 : 0;
-    const pct = Math.max(0, Math.min(100, raw));
     const v = (c[p[1]] != null && c[p[1]] !== '') ? escapeHtml(String(c[p[1]])) : '–';
-    return '<div class="cc-stat"><span class="k">' + p[0] + '</span><span class="v">' + v + '</span>' + ccMeter(pct, 10) + '</div>';
+    return '<div class="cc-stat"><span class="k">' + p[0] + '</span><span class="v">' + v + '</span>' + ccMeter(raw, 10, 10) + '</div>';
   }).join('');
   const stress = Number(c.stress) || 0, wounds = Number(c.wounds) || 0;
   const items = (c.items && c.items.length)
     ? ('<ul class="cc-items">' + c.items.map((x) => '<li>' + escapeHtml(x) + '</li>').join('') + '</ul>')
     : '<div class="cc-empty">无装备记录</div>';
   const notes = c.notes ? ('<div class="cc-notes">' + escapeHtml(c.notes) + '</div>') : '<div class="cc-empty">无备注</div>';
-  return '<div class="cc-card">' + avatarHTML(c)
+  return '<div class="cc-card">' + '<div class="cc-sys">&gt; SYS::CHAR_LOAD OK<span class="cc-cursor">_</span></div>' + avatarHTML(c)
     + '<div class="cc-head"><span class="cc-name">' + escapeHtml(c.name || c.owner) + '</span>'
     + '<span class="cc-cls">' + escapeHtml(c.cls || '未设定职业') + '</span></div>'
     + '<div class="cc-readout"><span>ID//' + escapeHtml(c.owner) + '</span><span>ROOM//' + escapeHtml(c.room || '-') + '</span></div>'
     + '<div class="cc-stats">' + stats + '</div>'
     + '<div class="cc-vitals">'
-    + '<div class="cc-vital' + (stress >= 5 ? ' warn' : '') + '"><span class="k">STRESS</span><span class="v">' + stress + '</span>' + ccMeter(Math.min(100, stress * 10), 10) + '</div>'
-    + '<div class="cc-vital' + (wounds > 0 ? ' warn' : '') + '"><span class="k">WOUNDS</span><span class="v">' + wounds + '</span>' + ccMeter(Math.min(100, wounds * 10), 10) + '</div>'
+    + '<div class="cc-vital' + (stress >= 5 ? ' warn' : '') + '"><span class="k">STRESS</span><span class="v">' + stress + '</span>' + ccMeter(stress, 10, 10) + '</div>'
+    + '<div class="cc-vital' + (wounds > 0 ? ' warn' : '') + '"><span class="k">WOUNDS</span><span class="v">' + wounds + '</span>' + ccMeter(wounds, 10, 10) + '</div>'
     + '</div>'
     + '<div class="cc-sec">&gt; 装备·物品</div>' + items
     + '<div class="cc-sec">&gt; 备注</div>' + notes + '</div>';
