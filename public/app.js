@@ -630,7 +630,7 @@ function charCardHTML(c) {
   const stats = STAT_KEYS.map(function (p) {
     const raw = (c[p[1]] != null && c[p[1]] !== '') ? Number(c[p[1]]) || 0 : 0;
     const v = (c[p[1]] != null && c[p[1]] !== '') ? escapeHtml(String(c[p[1]])) : '–';
-    return '<div class="cc-stat"><span class="k">' + p[0] + '</span><span class="v">' + v + '</span>' + ccMeter(raw, 10, 10) + '</div>';
+    return '<div class="cc-stat"><span class="k">' + p[0] + '</span><span class="v">' + v + '</span>' + ccMeter(raw, p[2] || 10, 10) + '</div>';
   }).join('');
   const stress = Number(c.stress) || 0, wounds = Number(c.wounds) || 0;
   const items = (c.items && c.items.length)
@@ -647,7 +647,8 @@ function charCardHTML(c) {
     + '<div class="cc-vital' + (wounds > 0 ? ' warn' : '') + '"><span class="k">WOUNDS</span><span class="v">' + wounds + '</span>' + ccMeter(wounds, 10, 10) + '</div>'
     + '</div>'
     + '<div class="cc-sec">&gt; 装备·物品</div>' + items
-    + '<div class="cc-sec">&gt; 备注</div>' + notes + '</div>';
+    + '<div class="cc-sec">&gt; 备注</div>' + notes
+    + '<div class="cc-eof">&gt; END OF FILE<span class="cc-cursor">_</span></div></div>';
 }
 function openCharView(c) {
   const body = $('#charViewBody'); if (!body) return;
@@ -671,7 +672,7 @@ $('#charBtn').addEventListener('click', openChars);
 $('#charClose').addEventListener('click', closeChars);
 
 // ---- 右侧栏：角色信息（自己的卡，只读摘要） ----
-const STAT_KEYS = [['STR', 'str'], ['SPD', 'spd'], ['INT', 'int'], ['COM', 'com'], ['SAN', 'san'], ['FEA', 'fea'], ['BOD', 'bod'], ['ARM', 'arm']];
+const STAT_KEYS = [['STR', 'str', 10], ['SPD', 'spd', 10], ['INT', 'int', 10], ['COM', 'com', 10], ['SAN', 'san', 10], ['FEA', 'fea', 10], ['BOD', 'bod', 10], ['ARM', 'arm', 30]];
 function loadSideChar() {
   const wrap = $('#sideChar'); if (!wrap) return;
   const q = (viewRoom === '__all__') ? ('room=*&gm=' + encodeURIComponent(gmCode)) : ('room=' + encodeURIComponent(viewRoom));
