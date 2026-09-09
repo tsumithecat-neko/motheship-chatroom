@@ -78,19 +78,21 @@ body {
 
 /* login */
 .login-card { padding: 30px 34px; width: 360px; text-align: center; }
-.logo { font-size: 22px; letter-spacing: 3px; color: var(--green); text-shadow: 0 0 12px rgba(255,255,255,0.35); }
-.sub { color: var(--dim); margin: 6px 0 18px; font-size: 12px; letter-spacing: 1px; }
-#nameInput {
-  width: 100%; padding: 12px; background: var(--panel2); border: 1px solid var(--line);
-  color: var(--text); border-radius: 6px; font-family: inherit; font-size: 14px; outline: none;
+.logo { font-size: 22px; letter-spacing: 3px; color: var(--green); text-shadow: 0 0 12px rgba(255,255,255,0.35); font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; }
+.sub { color: var(--dim); margin: 6px 0 18px; font-size: 12px; letter-spacing: 1px; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; }
+.login-field { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+#nameInput, #gmInput {
+  flex: 1; padding: 10px 6px; background: transparent; border: 0; border-bottom: 1px solid var(--line);
+  color: var(--text); border-radius: 0; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; font-size: 14px; outline: none; caret-color: var(--green);
 }
-#nameInput:focus { border-color: var(--green); }
+#nameInput::placeholder, #gmInput::placeholder { color: var(--dim); opacity: .8; }
+#nameInput:focus, #gmInput:focus { border-bottom-color: var(--green); }
 #connectBtn, button {
   font-family: inherit; cursor: pointer; border: 1px solid var(--line);
   background: linear-gradient(180deg, #14202c, #0e1822); color: var(--green);
   padding: 10px 16px; border-radius: 6px; letter-spacing: 1px; transition: 0.15s;
 }
-#connectBtn { width: 100%; margin-top: 12px; }
+#connectBtn { width: 100%; margin-top: 16px; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace; letter-spacing: 2px; }
 button:hover { border-color: var(--green); color: #fff; }
 .hint { color: var(--dim); font-size: 11px; margin-top: 14px; }
 
