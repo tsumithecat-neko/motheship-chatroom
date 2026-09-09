@@ -609,3 +609,8 @@ button.mini.amber:hover { border-color: var(--amber); color: #fff; background: r
 .dlg-custom-in { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .dlg-custom-in input[type=text] { flex: 1; min-width: 90px; }
 .dlg-custom-in input[type=color] { width: 34px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--panel2); cursor: pointer; }
+
+/* 记录状态指示（GM 专用） */
+.log-state{display:inline-flex;align-items:center;height:28px;padding:0 10px;margin-right:6px;border-radius:6px;font-size:12px;line-height:1;color:#9fb3c8;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);user-select:none;}
+.log-state.on{color:#7CFFB2;background:rgba(60,200,120,.16);border-color:rgba(80,220,140,.5);}
+.log-state.paused{color:#FFD27C;background:rgba(220,170,60,.16);border-color:rgba(220,170,60,.5);}

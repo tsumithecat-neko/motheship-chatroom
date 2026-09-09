@@ -16,6 +16,7 @@ const DATA = isPkg ? path.join(EXE_DIR, 'data') : path.join(ROOT, 'data');
 const CHARFILE = path.join(DATA, 'characters.json');
 const MSGLOG = path.join(DATA, 'messages.json');
 const ROOMFILE = path.join(DATA, 'rooms.json');
+const LOGFILE = path.join(DATA, 'logs.json');
 const BOOT = Date.now(); // 服务启动时刻（状态读数用）
 
 fs.mkdirSync(DATA, { recursive: true });
@@ -31,6 +32,10 @@ try {
   const raw = JSON.parse(fs.readFileSync(MSGLOG, 'utf8'));
   messages = Array.isArray(raw) ? { general: raw } : raw;
 } catch (e) { messages = {}; }
+
+let logs = {};
+try { logs = JSON.parse(fs.readFileSync(LOGFILE, 'utf8')); } catch (e) { logs = {}; }
+if (typeof logs !== 'object' || Array.isArray(logs)) logs = {};
 
 let characters = {};
 try { characters = JSON.parse(fs.readFileSync(CHARFILE, 'utf8')); } catch (e) {}
@@ -48,6 +53,7 @@ function saveMessages() {
 }
 function saveChars() { fs.writeFile(CHARFILE, JSON.stringify(characters), () => {}); }
 function saveRooms() { fs.writeFile(ROOMFILE, JSON.stringify(rooms), () => {}); }
+function saveLogs() { fs.writeFile(LOGFILE, JSON.stringify(logs), () => {}); }
 
 
 // ---- tactical map v4 (多楼层对象模型, 每频道一份) ----
@@ -451,7 +457,45 @@ function addMessage(roomId, obj) {
   obj.room = roomId;
   (messages[roomId] = messages[roomId] || []).push(obj);
   saveMessages();
+  // 记录控制：仅当本频道处于记录会话(logSession)且未暂停(logPaused)时，
+  // 把消息写入 logs[room]（导出用，避免杂聊入档）。join/控制类(noLog)消息跳过。
+  const r = findRoom(roomId);
+  if (r && r.logSession && !r.logPaused && !obj.noLog && !(obj.type === 'system' && /接入/.test(obj.text || ''))) {
+    (logs[roomId] = logs[roomId] || []).push(obj);
+    saveLogs();
+  }
   broadcast(roomId, obj);
+}
+
+// 记录控制（GM 专用，骰娘风格）：start/end 为整段记录的生命周期，on/off 为中途继续/暂停。
+function handleLogCommand(room, roomObj, gm, text) {
+  if (!isGM(gm)) {
+    addMessage(room, { type: 'system', text: '【记录】只有 GM 可控制记录。', noLog: true });
+    return;
+  }
+  const cmd = (text.slice(4).trim().split(/\s+/)[0] || '').toLowerCase();
+  let msg;
+  if (cmd === 'start') {
+    roomObj.logSession = true; roomObj.logPaused = false;
+    msg = '记录已开始：本频道从现在起记录跑团内容（dice / 发言 / 场景）。';
+  } else if (cmd === 'end') {
+    roomObj.logSession = false; roomObj.logPaused = false;
+    msg = '记录已结束：本频道停止记录。';
+  } else if (cmd === 'on') {
+    if (!roomObj.logSession) roomObj.logSession = true;
+    roomObj.logPaused = false;
+    msg = '记录已继续（暂停恢复，继续记录）。';
+  } else if (cmd === 'off') {
+    roomObj.logPaused = true;
+    msg = '记录已暂停：当前内容不再入档，用 !log on 继续。';
+  } else if (cmd === 'status') {
+    const st = !roomObj.logSession ? '未开始' : (roomObj.logPaused ? '已暂停' : '记录中');
+    msg = '记录状态：' + st + '。';
+  } else {
+    msg = '用法：!log start（开始） / !log end（结束） / !log on（继续） / !log off（暂停） / !log status（查看状态）';
+  }
+  saveRooms();
+  addMessage(room, { type: 'system', text: '【记录】' + msg, noLog: true });
 }
 
 // Mothership 1e Panic Table (d20): 1=FOCUS, 20=最坏
@@ -717,6 +761,11 @@ const server = http.createServer((req, res) => {
         sendJSON(res, { ok: 0, error: 'muted' });
         return;
       }
+      if (/^!log(\s|$)/.test(text)) {
+        handleLogCommand(room, roomObj, gm, text);
+        sendJSON(res, { ok: 1 });
+        return;
+      }
       if (parsed.type === 'join') {
         addMessage(room, { type: 'system', text: user + ' 接入「' + roomObj.name + '」' });
       } else if (text.startsWith('!')) {
@@ -804,8 +853,8 @@ const server = http.createServer((req, res) => {
         addMessage(id, { type: 'system', text: '【GM】频道「' + room.name + '」已关闭' });
         kickFromRoom(id, '【GM】频道「' + room.name + '」已关闭，你已被移出', null);
         rooms = rooms.filter((r) => r.id !== id);
-        delete messages[id];
-        saveRooms(); saveMessages();
+        delete messages[id]; delete logs[id];
+        saveRooms(); saveMessages(); saveLogs();
         sendJSON(res, { ok: 1 });
       });
       return;
@@ -894,13 +943,13 @@ const server = http.createServer((req, res) => {
     const room = url.searchParams.get('room') || 'general';
     if (room === '*') {
       if (!isGM(gm)) { res.writeHead(403); res.end('denied'); return; }
-      const out = rooms.map((r) => ({ id: r.id, name: r.name, messages: messages[r.id] || [] }));
+      const out = rooms.map((r) => ({ id: r.id, name: r.name, messages: logs[r.id] || [] }));
       sendJSON(res, { all: true, rooms: out });
       return;
     }
     const roomObj = findRoom(room);
     if (!roomObj || !canAccess(user, gm, roomObj)) { res.writeHead(403); res.end('denied'); return; }
-    sendJSON(res, { room, name: roomObj.name, messages: messages[room] || [] });
+    sendJSON(res, { room, name: roomObj.name, messages: logs[room] || [] });
     return;
   }
 

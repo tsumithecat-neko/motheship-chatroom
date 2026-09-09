@@ -25,6 +25,19 @@ function appendSystem(text) {
   d.textContent = text;
   logEl.appendChild(d);
   scroll();
+  if (/【记录】/.test(text)) updateLogBadge(text);
+}
+function updateLogBadge(text) {
+  const el = document.getElementById('logState');
+  if (!el) return;
+  let st = '未开始';
+  if (/记录已开始|记录已继续/.test(text)) st = '记录中';
+  else if (/记录已暂停/.test(text)) st = '已暂停';
+  else if (/记录已结束/.test(text)) st = '未开始';
+  else if (/记录状态：([^。]+)/.test(text)) st = RegExp.$1;
+  el.textContent = isGM ? ('记录：' + st) : '';
+  el.className = 'log-state' + (st === '记录中' ? ' on' : st === '已暂停' ? ' paused' : '');
+  el.style.display = isGM ? '' : 'none';
 }
 function escapeRegExp(s) { return (s || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 let toastTimer = null;
@@ -211,6 +224,7 @@ function loadRooms() {
   fetch('/api/rooms?user=' + enc(user) + '&gm=' + enc(gmCode)).then((r) => r.json()).then((data) => {
     const wasGM = isGM;
     isGM = !!data.gm;
+    if (!isGM) { const _ls = document.getElementById('logState'); if (_ls) _ls.style.display = 'none'; }
     $('#gmBadge').classList.toggle('hidden', !isGM);
     $('#roomManageBtn').classList.toggle('hidden', !isGM);
     const list = data.rooms || [];
