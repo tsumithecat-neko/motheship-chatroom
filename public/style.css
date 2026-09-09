@@ -634,10 +634,10 @@ button.mini.amber:hover { border-color: var(--amber); color: #fff; background: r
 .lh-note{margin:8px 0 0;color:#8aa0b6;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;}
 .lh-note code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#7CC4FF;}
 
-/* 终端风滚动条（块状复古质感：暗轨 + 绿块滑块，无圆角） */
-* { scrollbar-width: thin; scrollbar-color: #2f8f63 rgba(6,10,14,.7); }
+/* 终端风滚动条（块状复古质感：暗轨 + 白块滑块，无圆角，适配白色主色） */
+* { scrollbar-width: thin; scrollbar-color: #d8e6f3 rgba(6,10,14,.7); }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-track { background: #0a0f14; border-left: 1px solid rgba(124,255,178,.12); }
-*::-webkit-scrollbar-thumb { background: #2f8f63; border: 2px solid #0a0f14; border-radius: 0; box-shadow: inset 0 0 0 1px rgba(124,255,178,.45); }
-*::-webkit-scrollbar-thumb:hover { background: #3da06b; }
+*::-webkit-scrollbar-track { background: #0a0f14; border-left: 1px solid rgba(180,210,235,.14); }
+*::-webkit-scrollbar-thumb { background: #d8e6f3; border: 2px solid #0a0f14; border-radius: 0; box-shadow: inset 0 0 0 1px rgba(180,210,235,.6); }
+*::-webkit-scrollbar-thumb:hover { background: #ffffff; }
 *::-webkit-scrollbar-corner { background: #0a0f14; }
