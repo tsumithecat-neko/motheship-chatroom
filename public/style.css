@@ -614,3 +614,20 @@ button.mini.amber:hover { border-color: var(--amber); color: #fff; background: r
 .log-state{display:inline-flex;align-items:center;height:28px;padding:0 10px;margin-right:6px;border-radius:6px;font-size:12px;line-height:1;color:#9fb3c8;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);user-select:none;}
 .log-state.on{color:#7CFFB2;background:rgba(60,200,120,.16);border-color:rgba(80,220,140,.5);}
 .log-state.paused{color:#FFD27C;background:rgba(220,170,60,.16);border-color:rgba(220,170,60,.5);}
+.log-wrap{position:relative;display:inline-flex;align-items:center;}
+.log-state{cursor:pointer;}
+/* 用法弹层 */
+.log-help{position:absolute;top:34px;right:0;z-index:50;width:268px;padding:12px 14px;border-radius:10px;background:var(--panel2,#1c2530);border:1px solid var(--line,rgba(255,255,255,.14));box-shadow:0 10px 30px rgba(0,0,0,.45);color:var(--text,#e6edf3);font-size:12px;line-height:1.5;}
+.log-help[hidden]{display:none;}
+.lh-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.lh-title{font-weight:600;font-size:13px;color:#cfe3ff;}
+.lh-close{background:none;border:none;color:#8aa0b6;font-size:18px;line-height:1;cursor:pointer;padding:0 2px;}
+.lh-close:hover{color:#fff;}
+.lh-sub{margin:0 0 8px;color:#9fb3c8;}
+.lh-cmds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;}
+.lh-cmds li{display:flex;flex-direction:column;gap:1px;padding:5px 8px;border-radius:6px;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid transparent;}
+.lh-cmds li:hover{background:rgba(90,150,255,.14);border-color:rgba(90,150,255,.4);}
+.lh-cmds code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#7CC4FF;font-size:12px;}
+.lh-cmds span{color:#9fb3c8;}
+.lh-note{margin:8px 0 0;color:#8aa0b6;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;}
+.lh-note code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#7CC4FF;}

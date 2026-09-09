@@ -38,6 +38,28 @@ function updateLogBadge(text) {
   el.textContent = isGM ? ('记录：' + st) : '';
   el.className = 'log-state' + (st === '记录中' ? ' on' : st === '已暂停' ? ' paused' : '');
   el.style.display = isGM ? '' : 'none';
+  const wrap = document.getElementById('logWrap');
+  if (wrap) wrap.style.display = isGM ? '' : 'none';
+}
+// 记录控制用法弹层：GM 点击「记录」徽标展开 !log 指令清单，点命令可直接发送
+function setupLogHelp() {
+  const badge = document.getElementById('logState');
+  const wrap = document.getElementById('logWrap');
+  const help = document.getElementById('logHelp');
+  if (!badge || !help) return;
+  const toggle = (e) => { if (!isGM) return; e.stopPropagation(); help.hidden = !help.hidden; };
+  badge.addEventListener('click', toggle);
+  const close = document.getElementById('logHelpClose');
+  if (close) close.addEventListener('click', (e) => { e.stopPropagation(); help.hidden = true; });
+  help.querySelectorAll('.lh-cmds li').forEach((li) => {
+    li.addEventListener('click', () => {
+      const cmd = li.getAttribute('data-cmd');
+      if (cmd) send(cmd);
+      help.hidden = true;
+    });
+  });
+  document.addEventListener('click', (e) => { if (!help.hidden && !wrap.contains(e.target)) help.hidden = true; });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') help.hidden = true; });
 }
 function escapeRegExp(s) { return (s || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 let toastTimer = null;
@@ -715,6 +737,7 @@ $('#roomCancel').addEventListener('click', () => {
 });
 $('#roomManageBtn').addEventListener('click', openRoomAdmin);
 $('#roomClose').addEventListener('click', closeRoomAdmin);
+setupLogHelp();
 
 // restore + 自动登录（记住登录状态）
 $('#nameInput').value = localStorage.getItem('mothership_user') || '';

@@ -72,7 +72,24 @@
         <button id="checkBtn" data-page-node-id="HWn5cJQUsDDfLHHZUZ0UPU">检定</button>
         <button data-cmd="!panic" data-page-node-id="TmRqkhy31w5BneHmsyIfUD">Panic</button>
         <button data-cmd="!stress" data-page-node-id="46cxuWmiRGnbuV3uTMuZ2S">Stress</button>
-        <span id="logState" class="log-state" data-page-node-id="logStatePill" title="记录状态（GM 专用）">未记录</span>
+        <span class="log-wrap" id="logWrap">
+          <span id="logState" class="log-state" data-page-node-id="logStatePill" title="记录状态（GM 专用）· 点击查看用法">未记录</span>
+          <div class="log-help" id="logHelp" hidden>
+            <div class="lh-head">
+              <span class="lh-title">记录控制 · 骰娘风格</span>
+              <button type="button" class="lh-close" id="logHelpClose" title="关闭">×</button>
+            </div>
+            <p class="lh-sub">默认不记录，仅 GM 可用。点下方命令可直接发送。</p>
+            <ul class="lh-cmds">
+              <li data-cmd="!log start"><code>!log start</code><span>开始一段记录（此后本频道内容入档）</span></li>
+              <li data-cmd="!log end"><code>!log end</code><span>结束整段记录</span></li>
+              <li data-cmd="!log off"><code>!log off</code><span>中途暂停（当前内容不再入档）</span></li>
+              <li data-cmd="!log on"><code>!log on</code><span>从中途继续（恢复记录）</span></li>
+              <li data-cmd="!log status"><code>!log status</code><span>查看当前状态</span></li>
+            </ul>
+            <p class="lh-note">仅 <b>start~end</b> 之间、且未被 <code>off</code> 暂停的部分会被「导出」下载成 .txt。</p>
+          </div>
+        </span>
         <button id="exportBtn" title="导出本频道记录（仅含 !log start~end 之间、未暂停时记录的跑团内容）" data-page-node-id="hYxiv1adwBCyxUlOwf1dkH">导出</button>
       </div>
 
