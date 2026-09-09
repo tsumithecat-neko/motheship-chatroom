@@ -617,7 +617,7 @@ button.mini.amber:hover { border-color: var(--amber); color: #fff; background: r
 .log-wrap{position:relative;display:inline-flex;align-items:center;}
 .log-state{cursor:pointer;}
 /* 用法弹层 */
-.log-help{position:absolute;top:34px;right:0;z-index:50;width:268px;padding:12px 14px;border-radius:10px;background:var(--panel2,#1c2530);border:1px solid var(--line,rgba(255,255,255,.14));box-shadow:0 10px 30px rgba(0,0,0,.45);color:var(--text,#e6edf3);font-size:12px;line-height:1.5;}
+.log-help{position:absolute;bottom:calc(100% + 8px);top:auto;right:0;z-index:50;width:268px;padding:12px 14px;border-radius:10px;background:var(--panel2,#1c2530);border:1px solid var(--line,rgba(255,255,255,.14));box-shadow:0 10px 30px rgba(0,0,0,.45);color:var(--text,#e6edf3);font-size:12px;line-height:1.5;}
 .log-help[hidden]{display:none;}
 .lh-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
 .lh-title{font-weight:600;font-size:13px;color:#cfe3ff;}
@@ -631,3 +631,10 @@ button.mini.amber:hover { border-color: var(--amber); color: #fff; background: r
 .lh-cmds span{color:#9fb3c8;}
 .lh-note{margin:8px 0 0;color:#8aa0b6;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;}
 .lh-note code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#7CC4FF;}
+
+/* 终端风滚动条（细、方块状、暗轨 + 终端绿滑块） */
+* { scrollbar-width: thin; scrollbar-color: #2f6b4f rgba(8,12,17,.6); }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: rgba(8,12,17,.55); border-radius: 0; }
+*::-webkit-scrollbar-thumb { background: #2f6b4f; border-radius: 0; box-shadow: inset 0 0 0 1px rgba(124,255,178,.4), 0 0 4px rgba(124,255,178,.18); }
+*::-webkit-scrollbar-thumb:hover { background: #3da06b; }
